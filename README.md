@@ -27,3 +27,7 @@ gcloud container clusters create custom-fluentbit \
 kubectl apply -f kubernetes/test-js-logger-deploy.yaml
 ```
 
+## Creating logging sink
+```
+gcloud logging sinks create glean-event-bq-sink bigquery.googleapis.com/projects/akomar-server-telemetry-poc/datasets/glean_server_event --log-filter='jsonPayload.Type=~"glean-server-event*"'
+```
