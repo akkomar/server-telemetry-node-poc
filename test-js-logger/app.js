@@ -63,7 +63,14 @@ setInterval(() => {
     eventPayload = JSON.stringify(JSON.parse(eventPayload));
     // this outputs escaped payload and is similar to how FxA logs events right now: https://github.com/mozilla/fxa/blob/6d65d20d5cdd7e70f29f1c6e3d44185f0d06f117/packages/fxa-auth-server/lib/log.js#L289
     // {"Timestamp":1687448048064000000,"Logger":"fxa-oauth-server","Type":"glean-server-event","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"payload":"{\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event_name\": \"test\"}"}}
-    log.info('glean-server-event', {payload: eventPayload});
+    let ping = {
+      "document_namespace": "accounts-backend",
+      "document_type": "accounts-events",
+      "document_version": "1",
+      "document_id": "dd99db96-941d-4894-bb97-7a2bcd65bbf5",
+      "payload": eventPayload
+    }
+    log.info('glean-server-event', ping);
     
     // this outputs payload as a nested JSON so it will be automatically parsed by BQ sink
     // {"Timestamp":1687448048078000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-from-dict","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"timestamp":"2023-06-22T15:34:08.058Z","event_name":"test"}}
