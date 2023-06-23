@@ -62,17 +62,17 @@ setInterval(() => {
     }`;
     eventPayload = JSON.stringify(JSON.parse(eventPayload));
     // this outputs escaped payload and is similar to how FxA logs events right now: https://github.com/mozilla/fxa/blob/6d65d20d5cdd7e70f29f1c6e3d44185f0d06f117/packages/fxa-auth-server/lib/log.js#L289
-    // {"Timestamp":1687448048064000000,"Logger":"fxa-oauth-server","Type":"glean-server-event","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"payload":"{\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event\": \"test\"}"}}
+    // {"Timestamp":1687448048064000000,"Logger":"fxa-oauth-server","Type":"glean-server-event","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"payload":"{\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event_name\": \"test\"}"}}
     log.info('glean-server-event', {payload: eventPayload});
     
     // this outputs payload as a nested JSON so it will be automatically parsed by BQ sink
-    // {"Timestamp":1687448048078000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-from-dict","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"timestamp":"2023-06-22T15:34:08.058Z","event":"test"}}
-    const dict = {timestamp: timestamp, event: 'test'};
+    // {"Timestamp":1687448048078000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-from-dict","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"timestamp":"2023-06-22T15:34:08.058Z","event_name":"test"}}
+    const dict = {timestamp: timestamp, event_name: 'test'};
     log.info('glean-server-event-from-dict', dict);
     
     // this outputs the string in an `msg` field with JSON part escaped
-    // {"Timestamp":1687448048080000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-with-prefix","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"msg":"some-string {\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event\": \"test\"}"}}
-    log.info('glean-server-event-with-prefix', `some-string {"timestamp": "${timestamp}", "event": "test"}`);
+    // {"Timestamp":1687448048080000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-with-prefix","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"msg":"some-string {\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event_name\": \"test\"}"}}
+    log.info('glean-server-event-with-prefix', `some-string {"timestamp": "${timestamp}", "event_name": "test"}`);
 
     console.log('non-event log line')
   }, 1000)
