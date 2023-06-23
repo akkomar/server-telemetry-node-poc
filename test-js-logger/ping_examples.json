@@ -1,0 +1,114 @@
+log.js:15 (Glean.core.Pings.Maker) {
+  "metrics": {
+    "string": {
+      "event.name": "reg_view",
+      "account.user_id_sha256": "",
+      "relying_party.oauth_client_id": "",
+      "relying_party.service": "",
+      "session.device_type": "desktop",
+      "session.entrypoint": "",
+      "session.flow_id": "b9c1194185184c9cd35b664a304e4ba3ceea6d926c700450ee24b7fae18269d3",
+      "utm.campaign": "",
+      "utm.content": "",
+      "utm.medium": "",
+      "utm.source": "",
+      "utm.term": ""
+    }
+  },
+  "ping_info": {
+    "seq": 1,
+    "start_time": "2023-06-23T12:40+02:00",
+    "end_time": "2023-06-23T12:51+02:00"
+  },
+  "client_info": {
+    "telemetry_sdk_build": "1.4.0",
+    "client_id": "6b4db3a1-0af0-4f06-804a-9cb69f63fc3f",
+    "first_run_date": "2023-06-23+02:00",
+    "os": "Darwin",
+    "os_version": "Unknown",
+    "architecture": "Unknown",
+    "locale": "en-GB",
+    "app_build": "Unknown",
+    "app_display_version": "0.0.0",
+    "app_channel": "development"
+  }
+}
+:path:
+/submit/accounts-frontend-dev/accounts-events/1/dd99db96-941d-4894-bb97-7a2bcd65bbf5
+log.js:15 (Glean.core.Upload.PingUploadManager) Ping dd99db96-941d-4894-bb97-7a2bcd65bbf5 succesfully sent 200.
+log.js:15 (Glean.core.Pings.Maker) {
+  "metrics": {
+    "string": {
+      "event.name": "reg_submit",
+      "account.user_id_sha256": "",
+      "relying_party.oauth_client_id": "",
+      "relying_party.service": "",
+      "session.device_type": "desktop",
+      "session.entrypoint": "",
+      "session.flow_id": "b9c1194185184c9cd35b664a304e4ba3ceea6d926c700450ee24b7fae18269d3",
+      "utm.campaign": "",
+      "utm.content": "",
+      "utm.medium": "",
+      "utm.source": "",
+      "utm.term": ""
+    }
+  },
+  "ping_info": {
+    "seq": 2,
+    "start_time": "2023-06-23T12:51+02:00",
+    "end_time": "2023-06-23T12:52+02:00"
+  },
+  "client_info": {
+    "telemetry_sdk_build": "1.4.0",
+    "client_id": "6b4db3a1-0af0-4f06-804a-9cb69f63fc3f",
+    "first_run_date": "2023-06-23+02:00",
+    "os": "Darwin",
+    "os_version": "Unknown",
+    "architecture": "Unknown",
+    "locale": "en-GB",
+    "app_build": "Unknown",
+    "app_display_version": "0.0.0",
+    "app_channel": "development"
+  }
+}
+:path:
+/submit/accounts-frontend-dev/accounts-events/1/a729cee4-fb98-4c23-88f4-4746ec0dca3a
+log.js:15 (Glean.core.Upload.PingUploadManager) Ping a729cee4-fb98-4c23-88f4-4746ec0dca3a succesfully sent 200.
+log.js:15 (Glean.core.Pings.Maker) {
+  "metrics": {
+    "string": {
+      "event.name": "reg_submit_success",
+      "account.user_id_sha256": "",
+      "relying_party.oauth_client_id": "",
+      "relying_party.service": "",
+      "session.device_type": "desktop",
+      "session.entrypoint": "",
+      "session.flow_id": "b9c1194185184c9cd35b664a304e4ba3ceea6d926c700450ee24b7fae18269d3",
+      "utm.campaign": "",
+      "utm.content": "",
+      "utm.medium": "",
+      "utm.source": "",
+      "utm.term": ""
+    }
+  },
+  "ping_info": {
+    "seq": 3,
+    "start_time": "2023-06-23T12:52+02:00",
+    "end_time": "2023-06-23T12:52+02:00"
+  },
+  "client_info": {
+    "telemetry_sdk_build": "1.4.0",
+    "client_id": "6b4db3a1-0af0-4f06-804a-9cb69f63fc3f",
+    "first_run_date": "2023-06-23+02:00",
+    "os": "Darwin",
+    "os_version": "Unknown",
+    "architecture": "Unknown",
+    "locale": "en-GB",
+    "app_build": "Unknown",
+    "app_display_version": "0.0.0",
+    "app_channel": "development"
+  }
+}
+:path:
+/submit/accounts-frontend-dev/accounts-events/1/eda7a7bd-6d45-4174-9e08-0aea925e536d
+log.js:15 (Glean.core.Upload.PingUploadManager) Ping eda7a7bd-6d45-4174-9e08-0aea925e536d succesfully sent 200.
