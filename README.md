@@ -29,7 +29,7 @@ kubectl apply -f kubernetes/test-js-logger-deploy.yaml
 
 ## Creating logging sink
 ```
-gcloud logging sinks create glean-event-bq-sink bigquery.googleapis.com/projects/akomar-server-telemetry-poc/datasets/glean_server_event --log-filter='jsonPayload.Type=~"glean-server-event*"'
+gcloud logging sinks create glean-event-bq-sink bigquery.googleapis.com/projects/akomar-server-telemetry-poc/datasets/glean_server_event --log-filter='jsonPayload.Type=~"glean-server-event*"' --use-partitioned-tables
 ```
 
 ## References
