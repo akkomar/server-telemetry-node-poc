@@ -12,6 +12,42 @@ const mozlog = require('mozlog')({
 });
 const log = mozlog();
 
+function logBadPing() {
+  //log ping without client_info, it should be rejected at validation
+  let eventPayload = `{
+    "metrics": {
+      "string": {
+        "event.name": "reg_submit_success",
+        "account.user_id_sha256": "",
+        "relying_party.oauth_client_id": "",
+        "relying_party.service": "sync",
+        "session.device_type": "desktop",
+        "session.entrypoint": "",
+        "session.flow_id": "5d1eaf933f521cb2a15af909c813673ada8485d6ace8e806c57148cd7f13b30c",
+        "utm.campaign": "",
+        "utm.content": "",
+        "utm.medium": "",
+        "utm.source": "",
+        "utm.term": ""
+      }
+    },
+    "ping_info": {
+      "seq": 2,
+      "start_time": "2023-06-22T11:28-05:00",
+      "end_time": "2023-06-22T11:28-05:00"
+    }
+  }`;
+  eventPayload = JSON.stringify(JSON.parse(eventPayload));
+  let ping = {
+    "document_namespace": "accounts-backend",
+    "document_type": "accounts-events",
+    "document_version": "1",
+    "document_id": "dd99db96-941d-4894-bb97-7a2bcd65bbf5",
+    "payload": eventPayload
+  }
+  log.info('glean-server-event', ping);
+}
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 })
@@ -71,6 +107,8 @@ setInterval(() => {
       "payload": eventPayload
     }
     log.info('glean-server-event', ping);
+    logBadPing();
+    
     
     // this outputs payload as a nested JSON so it will be automatically parsed by BQ sink
     // {"Timestamp":1687448048078000000,"Logger":"fxa-oauth-server","Type":"glean-server-event-from-dict","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"timestamp":"2023-06-22T15:34:08.058Z","event_name":"test"}}
