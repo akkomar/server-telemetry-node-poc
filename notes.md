@@ -105,3 +105,9 @@ Create a Pub/Sub sink:
 ```
 gcloud logging sinks create glean-event-pubsub-sink pubsub.googleapis.com/projects/akomar-server-telemetry-poc/topics/glean-server-event --log-filter='jsonPayload.Type=~"glean-server-event*"'
 ```
+Run a streaming job:
+```sh
+cd ../gcp-ingestion
+../server-telemetry-node-poc/ingestion-beam-decoder-streaming.sh
+```
+Run java-consumer to read a decoded message from Pub/Sub topic.
