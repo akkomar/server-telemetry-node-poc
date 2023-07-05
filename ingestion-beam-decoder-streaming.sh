@@ -28,8 +28,8 @@ mvn -pl ingestion-beam -am \
     --geoIspDatabase=gs://akomar-server-telemetry-poc/GeoIP2-ISP/20230616/GeoIP2-ISP.mmdb \
     --input=projects/akomar-server-telemetry-poc/subscriptions/glean-server-event-sub \
     --inputType=pubsub \
-    --maxNumWorkers=50 \
-    --numWorkers=10 \
+    --maxNumWorkers=10 \
+    --numWorkers=1 \
     --output=projects/akomar-server-telemetry-poc/topics/telemetry-decoded \
     --outputFileFormat=json \
     --outputNumShards=200 \
@@ -39,5 +39,5 @@ mvn -pl ingestion-beam -am \
     --runner=DataflowRunner \
     --schemasLocation=gs://akomar-server-telemetry-poc/schemas/202306150145_ca90db03.tar.gz \
     --windowDuration=1m \
-    --workerMachineType=n1-highmem-4 \
+    --workerMachineType=e2-standard-2 \
 "
