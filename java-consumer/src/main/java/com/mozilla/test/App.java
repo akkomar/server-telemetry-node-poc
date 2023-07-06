@@ -9,9 +9,7 @@ import com.google.pubsub.v1.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
