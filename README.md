@@ -1,10 +1,21 @@
-## Running locally
+# Glean server-side event collection prototype
+This is a proof of concept of the end to end server-side telemetry collection.
+
+Data flow:
+* test-js-logger - node application, deployed to k8s, logs events to Cloud Logging
+* cloud logging sink delivers events to Pub/Sub topic
+* Decoder job reads from the topic ([see this PR](https://github.com/mozilla/gcp-ingestion/pull/2400)) and decodes messages to a format compatible with existing parts of the ingestion pipeline
+
+
+## Development
+### Running logger locally
 ```
+cd test-js-logger
+nvm use 18.14.2
 npm start
 ```
 
-
-## Deploying
+### Deploying
 ```
 export region=us-east1
 export zone=${region}-b
@@ -27,9 +38,19 @@ gcloud container clusters create custom-fluentbit \
 kubectl apply -f kubernetes/test-js-logger-deploy.yaml
 ```
 
-## Creating logging sink
+### Creating logging sink to Pub/Sub
 ```
-gcloud logging sinks create glean-event-bq-sink bigquery.googleapis.com/projects/akomar-server-telemetry-poc/datasets/glean_server_event --log-filter='jsonPayload.Type=~"glean-server-event*"' --use-partitioned-tables
+gcloud logging sinks create glean-event-pubsub-sink pubsub.googleapis.com/projects/akomar-server-telemetry-poc/topics/glean-server-event --log-filter='jsonPayload.Type=~"glean-server-event*"'
+```
+Run a streaming Decoder job:
+```sh
+cd ../gcp-ingestion
+../server-telemetry-node-poc/ingestion-beam-decoder-streaming.sh
+```
+Run java-consumer to read a decoded message from Pub/Sub topic:
+```
+cd java-consumer
+mvn clean compile exec:java -Dexec.mainClass=com.mozilla.test.App
 ```
 
 ## References

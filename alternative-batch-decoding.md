@@ -1,7 +1,13 @@
-# WiP notes
-## Decoding
-We have two options: decoder in batch mode reading from BQ or from Pub/Sub
+# Alternative - batch decoding
+Instead of moving events through Pub/Sub we could sink them directly to BigQuery and run the Decoder in batch mode reading from there. However this way we'd introduce a custom processing path (increasing ingestion pipeline comlexity) and lose the lower-latency `_live` view of the data.
+
+Although this approach would be cheaper than streaming, it would not make a big difference overall. We're expecting message volume ingested this way to be ~3% of the current strutured ingestion volume.
+
 ### Decoder reading from BQ
+Create logging Sink to BQ:
+```
+gcloud logging sinks create glean-event-bq-sink bigquery.googleapis.com/projects/akomar-server-telemetry-poc/datasets/glean_server_event --log-filter='jsonPayload.Type=~"glean-server-event*"' --use-partitioned-tables
+```
 Query to prepare a Decoder input table:
 ```sql
 CREATE OR REPLACE TABLE
@@ -99,15 +105,3 @@ WHERE
 LIMIT
   1000
 ```
-
-### Decoder reading from Pub/Sub
-Create a Pub/Sub sink:
-```
-gcloud logging sinks create glean-event-pubsub-sink pubsub.googleapis.com/projects/akomar-server-telemetry-poc/topics/glean-server-event --log-filter='jsonPayload.Type=~"glean-server-event*"'
-```
-Run a streaming job:
-```sh
-cd ../gcp-ingestion
-../server-telemetry-node-poc/ingestion-beam-decoder-streaming.sh
-```
-Run java-consumer to read a decoded message from Pub/Sub topic.
