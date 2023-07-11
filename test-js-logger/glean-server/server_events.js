@@ -4,11 +4,7 @@
 // This requires `uuid` library to be in the environment
 const uuidv4 = require('uuid').v4;
 
-class ServerEvent {
-  constructor(name) {
-    this._name = name;
-  }
-
+class AccountsEventsServerEvent {
   /**
    * Record a server event object.
    * It must be logged with mozlog with the type 'glean-server-event'
@@ -18,6 +14,9 @@ class ServerEvent {
    */
   record({
     applicationId,
+    appDisplayVersion,
+    channel,
+    event_name,
     account_user_id_sha256,
     relying_party_oauth_client_id,
     relying_party_service,
@@ -26,7 +25,7 @@ class ServerEvent {
     let eventPayload = {
       metrics: {
         string: {
-          'event.name': this._name,
+          'event.name': event_name,
           'account.user_id_sha256': account_user_id_sha256,
           'relying_party.oauth_client_id': relying_party_oauth_client_id,
           'relying_party.service': relying_party_service,
@@ -37,15 +36,16 @@ class ServerEvent {
         start_time: timestamp,
         end_time: timestamp,
       },
+      // `Unknown` fields below are required in the Glean schema, however they are not useful in server context
       client_info: {
         telemetry_sdk_build: 'glean-parser v. X.Y.Z',
-        first_run_date: '2023-06-22-05:00',
+        first_run_date: 'Unknown',
         os: 'Unknown',
         os_version: 'Unknown',
         architecture: 'Unknown',
         app_build: 'Unknown',
-        app_display_version: '0.0.0',
-        app_channel: 'development', // TODO: this should be set to the current channel
+        app_display_version: appDisplayVersion,
+        app_channel: channel,
       },
     };
     eventPayload = JSON.stringify(eventPayload);
@@ -64,6 +64,6 @@ class ServerEvent {
 }
 
 module.exports = {
-  event: new ServerEvent('accounts-events'),
+  accountsEventsEvent: new AccountsEventsServerEvent(),
   GLEAN_EVENT_MOZLOG_TYPE: 'glean-server-event',
 };

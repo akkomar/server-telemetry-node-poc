@@ -51,8 +51,11 @@ app.listen(3000, () => {
 setInterval(() => {
   //============================================================================
   // This is the new way to log server events with Glean
-  let glean_event = glean_server_events.event.record({
+  let glean_event = glean_server_events.accountsEventsEvent.record({
     applicationId: 'accounts-frontend', // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
+    appDisplayVersion: '0.0.1',
+    channel: 'development',
+    event_name: 'reg_view',
     account_user_id_sha256: 'abc',
     relying_party_oauth_client_id: '123',
     relying_party_service: 'sync',
