@@ -19,7 +19,7 @@ public class App {
 
         String projectId = "akomar-server-telemetry-poc";
         String subscriptionId = "telemetry-decoded-sub";//"test-preview";
-        Integer numOfMessages = 1;
+        Integer numOfMessages = 10;
 
         subscribeSyncExample(projectId, subscriptionId, numOfMessages);
     }
@@ -59,7 +59,7 @@ public class App {
                 PubsubMessage pubsubMessage = message.getMessage();
                 ByteString byteStringData = pubsubMessage.getData();
                 System.out.println("====================================");
-                System.out.println(byteStringData);
+                // System.out.println(byteStringData);
 
                 byte[] byteArray = byteStringData.toByteArray();
                 final ByteArrayInputStream dataStream = new ByteArrayInputStream(byteArray);
