@@ -52,6 +52,7 @@ setInterval(() => {
   //============================================================================
   // This is the new way to log server events with Glean
   let glean_event = glean_server_events.event.record({
+    applicationId: 'accounts-frontend',
     account_user_id_sha256: 'abc',
     relying_party_oauth_client_id: '123',
     relying_party_service: 'sync',
