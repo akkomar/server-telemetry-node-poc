@@ -31,7 +31,7 @@ function logBadPing() {
   };
   eventPayload = JSON.stringify(eventPayload);
   let ping = {
-    document_namespace: 'accounts-backend',
+    document_namespace: 'accounts-frontend', // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
     document_type: 'accounts-events',
     document_version: '1',
     document_id: 'dd99db96-941d-4894-bb97-7a2bcd65bbf5',

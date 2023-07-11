@@ -52,7 +52,7 @@ class ServerEvent {
     // this outputs escaped payload and is similar to how FxA logs events right now: https://github.com/mozilla/fxa/blob/6d65d20d5cdd7e70f29f1c6e3d44185f0d06f117/packages/fxa-auth-server/lib/log.js#L289
     // {"Timestamp":1687448048064000000,"Logger":"fxa-oauth-server","Type":"glean-server-event","Severity":6,"Pid":33056,"EnvVersion":"2.0","Fields":{"payload":"{\"timestamp\": \"2023-06-22T15:34:08.058Z\", \"event_name\": \"test\"}"}}
     let ping = {
-      document_namespace: applicationId, // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
+      document_namespace: applicationId,
       document_type: 'accounts-events',
       document_version: '1',
       document_id: uuidv4(),
