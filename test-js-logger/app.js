@@ -31,7 +31,7 @@ function logBadPing() {
   };
   eventPayload = JSON.stringify(eventPayload);
   let ping = {
-    document_namespace: 'accounts-frontend', // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
+    document_namespace: 'accounts-frontend',
     document_type: 'accounts-events',
     document_version: '1',
     document_id: 'dd99db96-941d-4894-bb97-7a2bcd65bbf5',
@@ -52,7 +52,7 @@ setInterval(() => {
   //============================================================================
   // This is the new way to log server events with Glean
   let glean_event = glean_server_events.event.record({
-    applicationId: 'accounts-frontend',
+    applicationId: 'accounts-frontend', // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
     account_user_id_sha256: 'abc',
     relying_party_oauth_client_id: '123',
     relying_party_service: 'sync',
