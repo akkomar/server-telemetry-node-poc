@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: test-js-logger
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       component: test-js-logger
