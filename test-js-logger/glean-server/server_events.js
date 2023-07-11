@@ -4,15 +4,25 @@
 // This requires `uuid` library to be in the environment
 const uuidv4 = require('uuid').v4;
 
+const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
+
 class AccountsEventsServerEvent {
   /**
-   * Record a server event object.
-   * It must be logged with mozlog with the type 'glean-server-event'
-   * in order to be correctly ingested.
+   * Record and submit a server event object.
+   * Event is logged using provided loggingFunction.
    *
-   * @returns {Object} A ping object containing information about the recorded event.
+   * @param {Object} options - The options object.
+   * @param {Function} options.loggingFunction - The logging function to use. It must accept two arguments: message type and message, and use mozlog for proper message formatting.
+   * @param {string} options.applicationId - The application ID.
+   * @param {string} options.appDisplayVersion - The application display version.
+   * @param {string} options.channel - The channel.
+   * @param {string} options.event_name - The event name.
+   * @param {string} options.account_user_id_sha256 - The SHA-256 hash of the account user ID.
+   * @param {string} options.relying_party_oauth_client_id - The OAuth client ID of the relying party.
+   * @param {string} options.relying_party_service - The relying party service.
    */
   record({
+    loggingFunction,
     applicationId,
     appDisplayVersion,
     channel,
@@ -59,7 +69,8 @@ class AccountsEventsServerEvent {
       payload: eventPayload,
     };
 
-    return ping;
+    // this is similar to how FxA currently logs with mozlog: https://github.com/mozilla/fxa/blob/4c5c702a7fcbf6f8c6b1f175e9172cdd21471eac/packages/fxa-auth-server/lib/log.js#L289
+    loggingFunction(GLEAN_EVENT_MOZLOG_TYPE, ping);
   }
 }
 

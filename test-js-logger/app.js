@@ -51,7 +51,10 @@ app.listen(3000, () => {
 setInterval(() => {
   //============================================================================
   // This is the new way to log server events with Glean
-  let glean_event = glean_server_events.accountsEventsEvent.record({
+  const loggingFunction = (mozlogMsgType, gleanPing) => log.info(mozlogMsgType, gleanPing)
+  
+  glean_server_events.accountsEventsEvent.record({
+    loggingFunction: loggingFunction,
     applicationId: 'accounts-frontend', // using `accounts-frontend` here for testing the Decoder because we don't have the backend schema yet
     appDisplayVersion: '0.0.1',
     channel: 'development',
@@ -60,9 +63,6 @@ setInterval(() => {
     relying_party_oauth_client_id: '123',
     relying_party_service: 'sync',
   });
-  // this is similar to how FxA currently logs with mozlog: https://github.com/mozilla/fxa/blob/4c5c702a7fcbf6f8c6b1f175e9172cdd21471eac/packages/fxa-auth-server/lib/log.js#L289
-  // it might make sense to bake the following line in the `record` function called above to make simpler to use
-  log.info(glean_server_events.GLEAN_EVENT_MOZLOG_TYPE, glean_event);
   //============================================================================
 
   // log some other stuff to test validation
