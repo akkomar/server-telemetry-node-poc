@@ -11,15 +11,14 @@ class AccountsEventsServerEvent {
    * Record and submit a server event object.
    * Event is logged using provided loggingFunction.
    *
-   * @param {Object} options - The options object.
-   * @param {Function} options.loggingFunction - The logging function to use. It must accept two arguments: message type and message, and use mozlog for proper message formatting.
-   * @param {string} options.applicationId - The application ID.
-   * @param {string} options.appDisplayVersion - The application display version.
-   * @param {string} options.channel - The channel.
-   * @param {string} options.event_name - The event name.
-   * @param {string} options.account_user_id_sha256 - The SHA-256 hash of the account user ID.
-   * @param {string} options.relying_party_oauth_client_id - The OAuth client ID of the relying party.
-   * @param {string} options.relying_party_service - The relying party service.
+   * @param {function} loggingFunction - The logging function to use. It must accept two arguments: message type and message, and use mozlog for proper message formatting.
+   * @param {string} applicationId - The application ID.
+   * @param {string} appDisplayVersion - The application display version.
+   * @param {string} channel - The channel.
+   * @param {string} event_name - The event name.
+   * @param {string} account_user_id_sha256 - The SHA-256 hash of the account user ID.
+   * @param {string} relying_party_oauth_client_id - The OAuth client ID of the relying party.
+   * @param {string} relying_party_service - The relying party service.
    */
   record({
     loggingFunction,
