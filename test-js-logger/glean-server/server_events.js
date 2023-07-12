@@ -76,5 +76,4 @@ class AccountsEventsServerEvent {
 
 module.exports = {
   accountsEventsEvent: new AccountsEventsServerEvent(),
-  GLEAN_EVENT_MOZLOG_TYPE: 'glean-server-event',
 };
