@@ -6,38 +6,66 @@ const uuidv4 = require('uuid').v4;
 
 const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
 
+var logger;
+
 class AccountsEventsServerEvent {
+  /**
+   * Create AccountsEventsServerEvent instance.
+   *
+   * @param {string} applicationId - The application ID.
+   * @param {string} appDisplayVersion - The application display version.
+   * @param {string} channel - The channel.
+   */
+  constructor(applicationId, appDisplayVersion, channel, logger_options) {
+    this._applicationId = applicationId;
+    this._appDisplayVersion = appDisplayVersion;
+    this._channel = channel;
+
+    if (!logger) {
+      const mozlog = require('mozlog')(logger_options);
+      logger = mozlog();
+    }
+    this._log = logger;
+  }
   /**
    * Record and submit a server event object.
    * Event is logged using provided loggingFunction.
    *
-   * @param {function} loggingFunction - The logging function to use. It must accept two arguments: message type and message, and use mozlog for proper message formatting.
-   * @param {string} applicationId - The application ID.
-   * @param {string} appDisplayVersion - The application display version.
-   * @param {string} channel - The channel.
    * @param {string} event_name - The event name.
    * @param {string} account_user_id_sha256 - The SHA-256 hash of the account user ID.
    * @param {string} relying_party_oauth_client_id - The OAuth client ID of the relying party.
    * @param {string} relying_party_service - The relying party service.
    */
   record({
-    loggingFunction,
-    applicationId,
-    appDisplayVersion,
-    channel,
-    event_name,
     account_user_id_sha256,
+    event_name,
     relying_party_oauth_client_id,
     relying_party_service,
+    session_device_type,
+    session_entrypoint,
+    session_flow_id,
+    utm_campaign,
+    utm_content,
+    utm_medium,
+    utm_source,
+    utm_term,
   }) {
     let timestamp = new Date().toISOString();
     let eventPayload = {
       metrics: {
         string: {
-          'event.name': event_name,
           'account.user_id_sha256': account_user_id_sha256,
+          'event.name': event_name,
           'relying_party.oauth_client_id': relying_party_oauth_client_id,
           'relying_party.service': relying_party_service,
+          'session.device_type': session_device_type,
+          'session.entrypoint': session_entrypoint,
+          'session.flow_id': session_flow_id,
+          'utm.campaign': utm_campaign,
+          'utm.content': utm_content,
+          'utm.medium': utm_medium,
+          'utm.source': utm_source,
+          'utm.term': utm_term,
         },
       },
       ping_info: {
@@ -53,15 +81,15 @@ class AccountsEventsServerEvent {
         os_version: 'Unknown',
         architecture: 'Unknown',
         app_build: 'Unknown',
-        app_display_version: appDisplayVersion,
-        app_channel: channel,
+        app_display_version: this._appDisplayVersion,
+        app_channel: this._channel,
       },
     };
     eventPayload = JSON.stringify(eventPayload);
 
     // This is the message structure that Decoder expects: https://github.com/mozilla/gcp-ingestion/pull/2400
     let ping = {
-      document_namespace: applicationId,
+      document_namespace: this._applicationId,
       document_type: 'accounts-events',
       document_version: '1',
       document_id: uuidv4(),
@@ -69,10 +97,24 @@ class AccountsEventsServerEvent {
     };
 
     // this is similar to how FxA currently logs with mozlog: https://github.com/mozilla/fxa/blob/4c5c702a7fcbf6f8c6b1f175e9172cdd21471eac/packages/fxa-auth-server/lib/log.js#L289
-    loggingFunction(GLEAN_EVENT_MOZLOG_TYPE, ping);
+    this._log.info(GLEAN_EVENT_MOZLOG_TYPE, ping);
   }
 }
 
+const createAccountsEvent = function ({
+  applicationId,
+  appDisplayVersion,
+  channel,
+  logger_options
+}) {
+  return new AccountsEventsServerEvent(
+    applicationId,
+    appDisplayVersion,
+    channel,
+    logger_options
+  );
+};
+
 module.exports = {
-  accountsEventsEvent: new AccountsEventsServerEvent(),
+  createAccountsEvent,
 };
