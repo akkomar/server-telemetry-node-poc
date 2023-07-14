@@ -55,6 +55,8 @@ setInterval(() => {
   // see https://github.com/akkomar/glean_parser/tree/server_events
   // To generate the code under `glean-server/server_events.js`, check out the branch above and run:
   // glean_parser translate ../server-telemetry-node-poc/test-js-logger/metrics/metrics.yaml ../server-telemetry-node-poc/test-js-logger/metrics/pings.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server
+
+  // First create an event instance providing a set of parameters that are constant during the lifetime of the application
   let event = glean_server_events.createAccountsEventsEventFn({
     applicationId: 'accounts-frontend',
     appDisplayVersion: '0.0.1',
@@ -65,6 +67,7 @@ setInterval(() => {
     }
   });
 
+  // Then log events using the event instance
   event.record({
     event_name: 'reg_view',
     account_user_id_sha256: 'abc',
