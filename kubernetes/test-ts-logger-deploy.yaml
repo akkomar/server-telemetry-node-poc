@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-ts-logger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: test-ts-logger
+  template:
+    metadata:
+      labels:
+        component: test-ts-logger
+    spec:
+      containers:
+        - name: test-ts-logger
+          image: gcr.io/akomar-server-telemetry-poc/test-ts-logger

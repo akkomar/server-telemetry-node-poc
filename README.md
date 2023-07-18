@@ -26,6 +26,8 @@ gcloud config set project ${project_id}
 
 ```
 docker build --platform linux/amd64 -t test-js-logger test-js-logger && docker tag test-js-logger gcr.io/${project_id}/test-js-logger && docker push gcr.io/${project_id}/test-js-logger
+
+docker build --platform linux/amd64 -t test-ts-logger test-ts-logger && docker tag test-ts-logger gcr.io/${project_id}/test-ts-logger && docker push gcr.io/${project_id}/test-ts-logger
 ```
 
 ```
@@ -36,6 +38,8 @@ gcloud container clusters create custom-fluentbit \
 
 ```
 kubectl apply -f kubernetes/test-js-logger-deploy.yaml
+
+kubectl apply -f kubernetes/test-ts-logger-deploy.yaml
 ```
 
 ### Creating logging sink to Pub/Sub
