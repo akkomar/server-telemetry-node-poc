@@ -92,7 +92,7 @@ export const createAccountsEventsEvent = function ({
   applicationId,
   appDisplayVersion,
   channel,
-  logger_options,
+  logger_options
 }) {
   return new AccountsEventsServerEvent(
     applicationId,
