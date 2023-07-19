@@ -7,7 +7,7 @@
 // This requires `uuid` and `mozlog` libraries to be in the environment
 // @types/uuid and mozlog types definitions are required in devDependencies
 // for the latter see https://github.com/mozilla/fxa/blob/85bda71cda376c417b8c850ba82aa14252208c3c/types/mozlog/index.d.ts
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import mozlog, { Logger } from 'mozlog';
 
 const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
@@ -95,7 +95,7 @@ class AccountsEventsServerEvent {
       document_namespace: this._applicationId,
       document_type: 'accounts-events',
       document_version: '1',
-      document_id: uuid(),
+      document_id: uuidv4(),
       payload: eventPayloadSerialized,
     };
 
@@ -104,7 +104,7 @@ class AccountsEventsServerEvent {
   }
 }
 
-export const createAccountsEventsEventFn = function ({
+export const createAccountsEventsEvent = function ({
   applicationId,
   appDisplayVersion,
   channel,

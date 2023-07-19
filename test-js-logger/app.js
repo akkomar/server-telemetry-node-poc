@@ -1,18 +1,18 @@
-const express = require('express');
+import express from 'express';
+import mozlog from 'mozlog';
 
-const glean_server_events = require('./glean-server/server_events');
+import { createAccountsEventsEvent } from './glean-server/server_events.js';
 
 const app = express();
 // create your mozlog instance
-const mozlog = require('mozlog')({
+const log = mozlog({
   app: 'fxa-oauth-server',
   level: 'verbose', //default is INFO
   fmt: 'heka', //default is 'heka'
   uncaught: 'exit', // default is 'log', also available as 'ignore'
   debug: true, //default is false
   stream: process.stdout, //default is process.stdout
-});
-const log = mozlog();
+})();
 
 function logBadPing() {
   //log ping without client_info, it should be rejected at validation
@@ -57,14 +57,14 @@ setInterval(() => {
   // glean_parser translate ../server-telemetry-node-poc/test-js-logger/metrics/metrics.yaml ../server-telemetry-node-poc/test-js-logger/metrics/pings.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server
 
   // First create an event instance providing a set of parameters that are constant during the lifetime of the application
-  let event = glean_server_events.createAccountsEventsEventFn({
+  let event = createAccountsEventsEvent({
     applicationId: 'accounts-frontend',
     appDisplayVersion: '0.0.1',
     channel: 'development',
     logger_options: {
       app: 'fxa-oauth-server',
       stream: process.stdout, //default is process.stdout
-    }
+    },
   });
 
   // Then log events using the event instance

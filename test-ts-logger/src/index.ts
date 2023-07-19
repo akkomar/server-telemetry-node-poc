@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAccountsEventsEventFn } from './glean-server/server_events';
+import { createAccountsEventsEvent } from './glean-server/server_events';
 
 const app = express();
 const port = 3000;
@@ -18,7 +18,7 @@ setInterval(() => {
   // TODO: generate the code under `glean-server/server_events.ts` using glean_parser
 
   // First create an event instance providing a set of parameters that are constant during the lifetime of the application
-  let event = createAccountsEventsEventFn({
+  let event = createAccountsEventsEvent({
     applicationId: 'accounts-frontend',
     appDisplayVersion: '0.0.1',
     channel: 'development',
