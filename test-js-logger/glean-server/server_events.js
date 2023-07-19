@@ -10,7 +10,7 @@ import mozlog from 'mozlog';
 
 const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
 
-var _logger;
+let _logger;
 
 class AccountsEventsServerEvent {
   /**
