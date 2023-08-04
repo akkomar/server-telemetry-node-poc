@@ -11,7 +11,7 @@ set -x
 
 #   clean \
 #   compile \
-mvn -pl ingestion-beam -am \
+mvn -pl ingestion-beam -am clean compile \
   exec:java \
   -Dexec.mainClass=com.mozilla.telemetry.Decoder \
   -Dexec.args=" \
@@ -20,6 +20,7 @@ mvn -pl ingestion-beam -am \
     --autoscalingAlgorithm=THROUGHPUT_BASED \
     --enableStreamingEngine=false \
     --logIngestionEnabled=true \
+    --pubsubIdAttribute=insertId \
     --errorOutput=projects/akomar-server-telemetry-poc/topics/telemetry-error \
     --errorOutputNumShards=60 \
     --errorOutputType=pubsub \
@@ -34,7 +35,6 @@ mvn -pl ingestion-beam -am \
     --outputFileFormat=json \
     --outputNumShards=200 \
     --outputType=pubsub \
-    --proxyIps=35.227.207.240,34.120.208.123 \
     --region=us-west1 \
     --runner=DataflowRunner \
     --schemasLocation=gs://akomar-server-telemetry-poc/schemas/202306150145_ca90db03.tar.gz \
