@@ -46,8 +46,8 @@ class AccountsEventsServerEvent {
     event_name,
     relying_party_service,
   }) {
-    let timestamp = new Date().toISOString();
-    let eventPayload = {
+    const timestamp = new Date().toISOString();
+    const eventPayload = {
       metrics: {
         string: {
           'account.user_id_sha256': account_user_id_sha256,
@@ -72,10 +72,10 @@ class AccountsEventsServerEvent {
         app_channel: this._channel,
       },
     };
-    let eventPayloadSerialized = JSON.stringify(eventPayload);
+    const eventPayloadSerialized = JSON.stringify(eventPayload);
 
     // This is the message structure that Decoder expects: https://github.com/mozilla/gcp-ingestion/pull/2400
-    let ping = {
+    const ping = {
       document_namespace: this._applicationId,
       document_type: 'accounts-events',
       document_version: '1',

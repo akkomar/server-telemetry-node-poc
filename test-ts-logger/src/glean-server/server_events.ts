@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import mozlog, { Logger } from 'mozlog';
 
 const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
+type LoggerOptions = { app: string; fmt?: 'heka' };
 
 let _logger: Logger;
 
@@ -29,7 +30,7 @@ class AccountsEventsServerEvent {
     applicationId: string,
     appDisplayVersion: string,
     channel: string,
-    logger_options: any
+    logger_options: LoggerOptions
   ) {
     this._applicationId = applicationId;
     this._appDisplayVersion = appDisplayVersion;
@@ -62,8 +63,8 @@ class AccountsEventsServerEvent {
     event_name: string;
     relying_party_service: string;
   }) {
-    let timestamp = new Date().toISOString();
-    let eventPayload = {
+    const timestamp = new Date().toISOString();
+    const eventPayload = {
       metrics: {
         string: {
           'account.user_id_sha256': account_user_id_sha256,
@@ -88,10 +89,10 @@ class AccountsEventsServerEvent {
         app_channel: this._channel,
       },
     };
-    let eventPayloadSerialized = JSON.stringify(eventPayload);
+    const eventPayloadSerialized = JSON.stringify(eventPayload);
 
     // This is the message structure that Decoder expects: https://github.com/mozilla/gcp-ingestion/pull/2400
-    let ping = {
+    const ping = {
       document_namespace: this._applicationId,
       document_type: 'accounts-events',
       document_version: '1',
@@ -113,7 +114,7 @@ export const createAccountsEventsEvent = function ({
   applicationId: string;
   appDisplayVersion: string;
   channel: string;
-  logger_options: any;
+  logger_options: LoggerOptions;
 }) {
   return new AccountsEventsServerEvent(
     applicationId,
