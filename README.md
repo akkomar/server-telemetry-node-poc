@@ -44,7 +44,7 @@ kubectl apply -f kubernetes/test-ts-logger-deploy.yaml
 
 ### Creating logging sink to Pub/Sub
 ```
-gcloud logging sinks create glean-event-pubsub-sink pubsub.googleapis.com/projects/akomar-server-telemetry-poc/topics/glean-server-event --log-filter='jsonPayload.Type=~"glean-server-event*"'
+gcloud logging sinks create glean-event-pubsub-sink pubsub.googleapis.com/projects/akomar-server-telemetry-poc/topics/glean-server-event --log-filter='jsonPayload.Type="glean-server-event"'
 ```
 Run a streaming Decoder job:
 ```sh
