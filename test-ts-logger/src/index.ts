@@ -33,6 +33,8 @@ setInterval(() => {
 
   // Then log events using the event instance
   event.record({
+    user_agent: 'Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0',
+    ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
     event_name: 'reg_view',
     account_user_id_sha256: 'abc',
     relying_party_service: 'sync',

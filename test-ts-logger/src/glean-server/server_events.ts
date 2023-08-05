@@ -55,10 +55,14 @@ class AccountsEventsServerEvent {
    * @param {string} relying_party_service - The service name of the relying party.
    */
   record({
+    user_agent,
+    ip_address,
     account_user_id_sha256,
     event_name,
     relying_party_service,
   }: {
+    user_agent: string,
+    ip_address: string,
     account_user_id_sha256: string;
     event_name: string;
     relying_party_service: string;
@@ -97,6 +101,8 @@ class AccountsEventsServerEvent {
       document_type: 'accounts-events',
       document_version: '1',
       document_id: uuidv4(),
+      user_agent: user_agent,
+      ip_address: ip_address,
       payload: eventPayloadSerialized,
     };
 

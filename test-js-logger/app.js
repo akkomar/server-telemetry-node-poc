@@ -69,6 +69,8 @@ setInterval(() => {
 
   // Then log events using the event instance
   event.record({
+    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
+    ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
     event_name: 'reg_view',
     account_user_id_sha256: 'abc',
     relying_party_oauth_client_id: '123',
