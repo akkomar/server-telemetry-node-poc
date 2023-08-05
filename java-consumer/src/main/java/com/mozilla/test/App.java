@@ -18,8 +18,8 @@ public class App {
     public static void main(String... args) throws Exception {
 
         String projectId = "akomar-server-telemetry-poc";
-        // String subscriptionId = "telemetry-decoded-sub";
-        String subscriptionId = "test-preview";
+        String subscriptionId = "telemetry-decoded-sub";
+        // String subscriptionId = "test-preview";
 
         Integer numOfMessages = 10;
 
