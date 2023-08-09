@@ -25,6 +25,7 @@ class AccountsEventsServerEvent {
    * @param {string} applicationId - The application ID.
    * @param {string} appDisplayVersion - The application display version.
    * @param {string} channel - The channel.
+   * @param {LoggerOptions} logger_options - The logger options.
    */
   constructor(
     applicationId: string,
@@ -50,6 +51,9 @@ class AccountsEventsServerEvent {
    * Record and submit a server event object.
    * Event is logged using internal mozlog logger.
    *
+   * @param {string} user_agent - The user agent.
+   * @param {string} ip_address - The IP address. Will be used to decode Geo
+   *                              information and scrubbed at ingestion.
    * @param {string} account_user_id_sha256 - A hex string of a sha256 hash of the account's uid.
    * @param {string} event_name - The name of the event.
    * @param {string} relying_party_service - The service name of the relying party.
