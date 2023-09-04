@@ -27,7 +27,7 @@ mvn -pl ingestion-beam -am clean compile \
     --geoCityDatabase=gs://akomar-server-telemetry-poc/GeoIP2-City/20230616/GeoIP2-City.mmdb \
     --geoCityFilter=gs://akomar-server-telemetry-poc/cities15000.txt \
     --geoIspDatabase=gs://akomar-server-telemetry-poc/GeoIP2-ISP/20230616/GeoIP2-ISP.mmdb \
-    --input=projects/akomar-server-telemetry-poc/subscriptions/glean-server-event-sub \
+    --input=projects/akomar-server-telemetry-poc/subscriptions/dsre-1378 \
     --inputType=pubsub \
     --maxNumWorkers=10 \
     --numWorkers=1 \
@@ -37,7 +37,7 @@ mvn -pl ingestion-beam -am clean compile \
     --outputType=pubsub \
     --region=us-west1 \
     --runner=DataflowRunner \
-    --schemasLocation=gs://akomar-server-telemetry-poc/schemas/202306150145_ca90db03.tar.gz \
+    --schemasLocation=gs://akomar-server-telemetry-poc/schemas/202308240301_27af672d.tar.gz \
     --windowDuration=1m \
     --workerMachineType=e2-standard-2 \
 "
