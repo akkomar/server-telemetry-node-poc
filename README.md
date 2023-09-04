@@ -6,7 +6,6 @@ Data flow:
 * cloud logging sink delivers events to Pub/Sub topic
 * Decoder job reads from the topic ([see this PR](https://github.com/mozilla/gcp-ingestion/pull/2400)) and decodes messages to a format compatible with existing parts of the ingestion pipeline
 
-
 ## Development
 ### Running logger locally
 ```
