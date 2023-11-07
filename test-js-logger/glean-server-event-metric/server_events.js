@@ -40,8 +40,9 @@ class EventsServerEventLogger {
     identifiers_fxa_account_id,
     event,
   }) {
-    const timestamp = new Date().toISOString();
-    event.timestamp = timestamp;
+    const now = new Date();
+    const timestamp = now.toISOString();
+    event.timestamp = now.getTime();
     const eventPayload = {
       metrics: {
         string: {

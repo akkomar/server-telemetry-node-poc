@@ -16,7 +16,7 @@ type Event = {
   category: string;
   name: string;
   extra: Record<string, any>;
-  timestamp?: string;
+  timestamp?: number;
 };
 
 let _logger: Logger;
@@ -64,8 +64,9 @@ class EventsServerEventLogger {
     identifiers_fxa_account_id: string,
     event: Event
   }) {
-    const timestamp = new Date().toISOString();
-    event.timestamp = timestamp;
+    const now = new Date();
+    const timestamp = now.toISOString();
+    event.timestamp = now.getTime();
     const eventPayload = {
       metrics: {
         string: {
