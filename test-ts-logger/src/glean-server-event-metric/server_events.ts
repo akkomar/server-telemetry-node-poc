@@ -12,15 +12,21 @@ import mozlog, { Logger } from 'mozlog';
 
 const GLEAN_EVENT_MOZLOG_TYPE = 'glean-server-event';
 type LoggerOptions = { app: string; fmt?: 'heka' };
+type Event = {
+  category: string;
+  name: string;
+  extra: Record<string, any>;
+  timestamp?: string;
+};
 
 let _logger: Logger;
 
-class AccountsEventsServerEvent {
+class EventsServerEventLogger {
   _applicationId: string;
   _appDisplayVersion: string;
   _channel: string;
   /**
-   * Create AccountsEventsServerEvent instance.
+   * Create EventsServerEventLogger instance.
    *
    * @param {string} applicationId - The application ID.
    * @param {string} appDisplayVersion - The application display version.
@@ -47,39 +53,26 @@ class AccountsEventsServerEvent {
       _logger = mozlog(logger_options)(undefined);
     }
   }
-  /**
-   * Record and submit a server event object.
-   * Event is logged using internal mozlog logger.
-   *
-   * @param {string} user_agent - The user agent.
-   * @param {string} ip_address - The IP address. Will be used to decode Geo
-   *                              information and scrubbed at ingestion.
-   * @param {string} account_user_id_sha256 - A hex string of a sha256 hash of the account's uid.
-   * @param {string} event_name - The name of the event.
-   * @param {string} relying_party_service - The service name of the relying party.
-   */
-  record({
+  #record({
     user_agent,
     ip_address,
-    account_user_id_sha256,
-    event_name,
-    relying_party_service,
+    identifiers_fxa_account_id,
+    event,
   }: {
     user_agent: string,
     ip_address: string,
-    account_user_id_sha256: string,
-    event_name: string,
-    relying_party_service: string,
+    identifiers_fxa_account_id: string,
+    event: Event
   }) {
     const timestamp = new Date().toISOString();
+    event.timestamp = timestamp;
     const eventPayload = {
       metrics: {
         string: {
-          'account.user_id_sha256': account_user_id_sha256,
-          'event.name': event_name,
-          'relying_party.service': relying_party_service,
+          'identifiers.fxa_account_id': identifiers_fxa_account_id,
         },
       },
+      events: [event],
       ping_info: {
         seq: 0, // this is required, however doesn't seem to be useful in server context
         start_time: timestamp,
@@ -102,7 +95,7 @@ class AccountsEventsServerEvent {
     // This is the message structure that Decoder expects: https://github.com/mozilla/gcp-ingestion/pull/2400
     const ping = {
       document_namespace: this._applicationId,
-      document_type: 'accounts-events',
+      document_type: 'events',
       document_version: '1',
       document_id: uuidv4(),
       user_agent: user_agent,
@@ -113,18 +106,58 @@ class AccountsEventsServerEvent {
     // this is similar to how FxA currently logs with mozlog: https://github.com/mozilla/fxa/blob/4c5c702a7fcbf6f8c6b1f175e9172cdd21471eac/packages/fxa-auth-server/lib/log.js#L289
     _logger.info(GLEAN_EVENT_MOZLOG_TYPE, ping);
   }
+  /**
+   * Record and submit a backend_object_update event:
+   * Event triggered by the backend to record the change in state of an object (e.g. API requests to the mozilla.social Mastodon server). In the future, we could potentially use this event to track changes in state to core Mastodon objects (e.g. accounts and posts).
+   * Event is logged using internal mozlog logger.
+   *
+   * @param {string} user_agent - The user agent.
+   * @param {string} ip_address - The IP address. Will be used to decode Geo
+   *                              information and scrubbed at ingestion.
+   * @param {string} identifiers_fxa_account_id - The user's FxA account ID, if available..
+   * @param {string} object_type - A simple name to describe the object whose state changed. For example, `api_request`..
+   * @param {string} object_state - A JSON representation of the latest state of the object..
+   */
+  recordBackendObjectUpdate({
+    user_agent,
+    ip_address,
+    identifiers_fxa_account_id,
+    object_type,
+    object_state,
+  }: {
+    user_agent: string,
+    ip_address: string,
+    identifiers_fxa_account_id: string,
+    object_type: string,
+    object_state: string,
+  }) {
+    let event = {
+      'category': 'backend',
+      'name': 'object_update',
+      'extra': {
+        'object_type': object_type,
+        'object_state': object_state,
+      },
+    };
+    this.#record({
+      user_agent,
+      ip_address,
+      identifiers_fxa_account_id,
+      event
+    });
+  }
 }
 
 /**
  * Factory function that creates an instance of Glean Server Event Logger to
- * record `accounts-events` ping events.
+ * record `events` ping events.
  * @param {string} applicationId - The application ID.
  * @param {string} appDisplayVersion - The application display version.
  * @param {string} channel - The channel.
  * @param {Object} logger_options - The logger options.
  * @returns {EventsServerEventLogger} An instance of EventsServerEventLogger.
  */
-export const createAccountsEventsEvent = function ({
+export const createEventsServerEventLogger = function ({
   applicationId,
   appDisplayVersion,
   channel,
@@ -135,7 +168,7 @@ export const createAccountsEventsEvent = function ({
   channel: string;
   logger_options: LoggerOptions;
 }) {
-  return new AccountsEventsServerEvent(
+  return new EventsServerEventLogger(
     applicationId,
     appDisplayVersion,
     channel,

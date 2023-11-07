@@ -96,6 +96,15 @@ class AccountsEventsServerEvent {
   }
 }
 
+/**
+ * Factory function that creates an instance of Glean Server Event Logger to
+ * record `accounts-events` ping events.
+ * @param {string} applicationId - The application ID.
+ * @param {string} appDisplayVersion - The application display version.
+ * @param {string} channel - The channel.
+ * @param {Object} logger_options - The logger options.
+ * @returns {EventsServerEventLogger} An instance of EventsServerEventLogger.
+ */
 export const createAccountsEventsEvent = function ({
   applicationId,
   appDisplayVersion,

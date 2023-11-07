@@ -1,5 +1,6 @@
 import express from 'express';
 import { createAccountsEventsEvent } from './glean-server/server_events';
+import { createEventsServerEventLogger } from './glean-server-event-metric/server_events';
 
 const app = express();
 const port = 3000;
@@ -38,6 +39,25 @@ setInterval(() => {
     event_name: 'reg_view',
     account_user_id_sha256: 'abc',
     relying_party_service: 'sync',
+  });
+
+  // WiP - support for event metric type
+  // generated via:
+  // glean_parser translate tests/data/ruby_server_pings.yaml tests/data/ruby_server_metrics.yaml -f typescript_server -o ../server-telemetry-node-poc/test-ts-logger/src/glean-server-event-metric
+  let gleanEventLogger = createEventsServerEventLogger({
+    applicationId: 'accounts-frontend',
+    appDisplayVersion: '0.0.1',
+    channel: 'development',
+    logger_options: {
+      app: 'fxa-oauth-server',
+    },
+  });
+  gleanEventLogger.recordBackendObjectUpdate({
+    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
+    ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
+    identifiers_fxa_account_id: 'abc',
+    object_type: 'unknown',
+    object_state: 'great',
   });
   //============================================================================
 }, 1000);
