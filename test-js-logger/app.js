@@ -58,29 +58,31 @@ setInterval(() => {
   // glean_parser translate ../server-telemetry-node-poc/test-js-logger/metrics/metrics.yaml ../server-telemetry-node-poc/test-js-logger/metrics/pings.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server
 
   // First create an event instance providing a set of parameters that are constant during the lifetime of the application
-  let event = createAccountsEventsEvent({
-    applicationId: 'accounts-frontend',
-    appDisplayVersion: '0.0.1',
-    channel: 'development',
-    logger_options: {
-      app: 'fxa-oauth-server',
-      stream: process.stdout, //default is process.stdout
-    },
-  });
+  // let event = createAccountsEventsEvent({
+  //   applicationId: 'accounts-frontend',
+  //   appDisplayVersion: '0.0.1',
+  //   channel: 'development',
+  //   logger_options: {
+  //     app: 'fxa-oauth-server',
+  //     stream: process.stdout, //default is process.stdout
+  //   },
+  // });
 
-  // Then log events using the event instance
-  event.record({
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
-    ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
-    event_name: 'reg_view',
-    account_user_id_sha256: 'abc',
-    relying_party_oauth_client_id: '123',
-    relying_party_service: 'sync',
-  });
+  // // Then log events using the event instance
+  // event.record({
+  //   user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
+  //   ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
+  //   event_name: 'reg_view',
+  //   account_user_id_sha256: 'abc',
+  //   relying_party_oauth_client_id: '123',
+  //   relying_party_service: 'sync',
+  // });
 
-  // WiP - support for event metric type
+  // Logging with event metric type - new, recommended way
   // generated via:
   // glean_parser translate tests/data/ruby_server_pings.yaml tests/data/ruby_server_metrics.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server-event-metric
+
+  // First create an event instance providing a set of parameters that are constant during the lifetime of the application
   let gleanEventLogger = createEventsServerEventLogger({
     applicationId: 'accounts-frontend',
     appDisplayVersion: '0.0.1',
@@ -90,6 +92,7 @@ setInterval(() => {
       stream: process.stdout, //default is process.stdout
     },
   });
+  // Then log events using the event logger instance
   gleanEventLogger.recordBackendObjectUpdate({
     user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
     ip_address: '2a02:a311:803c:6300:4074:5cf2:91ac:d546',
