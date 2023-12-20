@@ -8,7 +8,7 @@ package glean
 
 // required imports
 import (
-	"fmt"
+    "fmt"
 	"encoding/json"
 	"time"
 
@@ -19,6 +19,8 @@ import (
 var gleanEventMozlogType string = "glean-server-event"
 
 
+// TODO: confirm envelope schema and assemble this json in a nicer way
+// TODO: decide how to log - stdout, mozlog, etc, is there a standard way for new go services in gcpv2?
 func logEvent(eventType string, message string) {
 	fmt.Printf("{\"Type\": \"%s\", \"Fields\": %s\n", eventType, message)
 }
