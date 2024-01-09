@@ -13,6 +13,11 @@ cd test-js-logger
 nvm use 18.14.2
 npm start
 ```
+#### Go logger
+```
+cd test-go-logger
+go run main.go
+```
 
 ### Deploying
 ```
@@ -39,6 +44,14 @@ gcloud container clusters create custom-fluentbit \
 kubectl apply -f kubernetes/test-js-logger-deploy.yaml
 
 kubectl apply -f kubernetes/test-ts-logger-deploy.yaml
+```
+#### Go logger
+```
+docker build --platform linux/amd64 -t test-go-logger test-go-logger && docker tag test-go-logger gcr.io/${project_id}/test-go-logger && docker push gcr.io/${project_id}/test-go-logger
+
+kubectl apply -f kubernetes/test-go-logger-deploy.yaml
+
+kubectl rollout restart deploy test-go-logger
 ```
 
 ### Creating logging sink to Pub/Sub

@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-go-logger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: test-go-logger
+  template:
+    metadata:
+      labels:
+        component: test-go-logger
+    spec:
+      containers:
+        - name: test-go-logger
+          image: gcr.io/akomar-server-telemetry-poc/test-go-logger

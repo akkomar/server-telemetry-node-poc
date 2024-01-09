@@ -8,8 +8,9 @@ package glean
 
 // required imports
 import (
-    "fmt"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,18 +19,10 @@ import (
 // log type string used to identify logs to process in the Moz Data Pipeline
 var gleanEventMozlogType string = "glean-server-event"
 
-
-// TODO: confirm envelope schema and assemble this json in a nicer way
-// TODO: decide how to log - stdout, mozlog, etc, is there a standard way for new go services in gcpv2?
-func logEvent(eventType string, message string) {
-	fmt.Printf("{\"Type\": \"%s\", \"Fields\": %s\n", eventType, message)
-}
-
-
 type GleanEventsLogger struct {
-	AppID             string
-	AppDisplayVersion string
-	AppChannel        string
+	AppID             string // Application Id to identify application per Glean standards
+	AppDisplayVersion string // Version of application emitting the event
+	AppChannel        string // Channel to differentiate logs from prod/beta/staging/devel
 }
 
 // exported type for public method parameters
@@ -38,7 +31,7 @@ type RequestInfo struct {
 	IpAddress string
 }
 
-// deafult empty values will be omitted in json from ping struct definition
+// default empty values will be omitted in json from ping struct definition
 var defaultRequestInfo = RequestInfo{
 	UserAgent: "",
 	IpAddress: "",
@@ -82,10 +75,17 @@ type pingPayload struct {
 }
 
 type gleanEvent struct {
-	Category  string          `json:"category"`
-	Name      string          `json:"name"`
-	Timestamp int64           `json:"timestamp"`
-	Extra     [][]interface{} `json:"extra"`
+	Category  string                 `json:"category"`
+	Name      string                 `json:"name"`
+	Timestamp int64                  `json:"timestamp"`
+	Extra     map[string]interface{} `json:"extra"`
+}
+
+type logEnvelope struct {
+	Timestamp string
+	Logger    string
+	Type      string
+	Fields    ping
 }
 
 func (g GleanEventsLogger) createClientInfo() clientInfo {
@@ -111,7 +111,11 @@ func createPingInfo() pingInfo {
 	}
 }
 
-func (g GleanEventsLogger) createPing(documentType string, config RequestInfo, payload string) ping {
+func (g GleanEventsLogger) createPing(documentType string, config RequestInfo, payload pingPayload) ping {
+	var payloadJson, payloadErr = json.Marshal(payload)
+	if payloadErr != nil {
+		panic("Unable to marshal payload to json")
+	}
 	var documentId = uuid.New()
 	return ping{
 		DocumentNamespace: g.AppID,
@@ -120,11 +124,12 @@ func (g GleanEventsLogger) createPing(documentType string, config RequestInfo, p
 		DocumentID:        documentId.String(),
 		UserAgent:         config.UserAgent,
 		IpAddress:         config.IpAddress,
-		Payload:           string(payload),
+		Payload:           string(payloadJson),
 	}
 }
 
-// method called by each event method
+// method called by each event method.
+// construct the ping, wrap it in the envelope, and print to stdout
 func (g GleanEventsLogger) record(
 	documentType string,
 	requestInfo RequestInfo,
@@ -138,21 +143,19 @@ func (g GleanEventsLogger) record(
 		Events:     events,
 	}
 
-	var payloadJson, payloadErr = json.Marshal(telemetryPayload)
-	if payloadErr != nil {
-		panic("Unable to marshal payload to json")
-	}
+	var ping = g.createPing(documentType, requestInfo, telemetryPayload)
 
-	// TODO: confirm expected shape with data team
-	// ruby implementation wraps ping in another js object before JSON.dumping to a string
-	// ex. { "Timestamp": string, "Logger": name, "Type": gleanEventMozLogType, "Severity": string, "Pid": string, "Fields": pingJson }
-	// js appears not to
-	var ping = g.createPing(documentType, requestInfo, string(payloadJson))
-	var pingJson, err = json.Marshal(ping)
-	if err != nil {
-		panic("Unable to marshal ping to json")
+	var envelope = logEnvelope{
+		Timestamp: strconv.FormatInt(time.Now().UnixNano(), 10),
+		Logger:    "glean",
+		Type:      gleanEventMozlogType,
+		Fields:    ping,
 	}
-	logEvent(gleanEventMozlogType, string(pingJson))
+	var envelopeJson, envelopeErr = json.Marshal(envelope)
+	if envelopeErr != nil {
+		panic("Unable to marshal log envelope to json")
+	}
+	fmt.Println(string(envelopeJson))
 }
 
 type EventBackendObjectUpdate struct {
@@ -168,13 +171,13 @@ func (g GleanEventsLogger) RecordEventBackendObjectUpdate(
 	params EventBackendObjectUpdate,
 ) {
 	var metrics = metrics{
-    "string": {
-      "identifiers.fxa_account_id": params.IdentifiersFxaAccountId,
-    },
+		"string": {
+			"identifiers.fxa_account_id": params.IdentifiersFxaAccountId,
+		},
 	}
-	var extraKeys = [][]interface{}{
-    {"object_type", params.ObjectType},
-    {"object_state", params.ObjectState},
+	var extraKeys = map[string]interface{}{
+		"object_type": params.ObjectType,
+		"object_state": params.ObjectState,
 	}
 	var events = []gleanEvent{
 		gleanEvent{
