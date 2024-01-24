@@ -18,6 +18,11 @@ npm start
 cd test-go-logger
 go run main.go
 ```
+#### Python logger
+```
+cd test-py-logger
+python main.py
+```
 
 ### Deploying
 ```
@@ -52,6 +57,14 @@ docker build --platform linux/amd64 -t test-go-logger test-go-logger && docker t
 kubectl apply -f kubernetes/test-go-logger-deploy.yaml
 
 kubectl rollout restart deploy test-go-logger
+```
+#### Python logger
+```
+docker build --platform linux/amd64 -t test-py-logger test-py-logger && docker tag test-py-logger gcr.io/${project_id}/test-py-logger && docker push gcr.io/${project_id}/test-py-logger
+
+kubectl apply -f kubernetes/test-py-logger-deploy.yaml
+
+kubectl rollout restart deploy test-py-logger
 ```
 
 ### Creating logging sink to Pub/Sub
