@@ -31,21 +31,21 @@ class EventsServerEventLogger:
         self._channel = channel
 
     def _record(
-		self,
-		user_agent: str,
-		ip_address: str,
-		identifiers_fxa_account_id: str,
-		event: dict[str, Any]
-	) -> None:
+        self,
+        user_agent: str,
+        ip_address: str,
+        identifiers_fxa_account_id: str,
+        event: dict[str, Any]
+    ) -> None:
         now = datetime.now(timezone.utc)
         timestamp = now.isoformat()
         event["timestamp"] = int(1000.0 * now.timestamp())  # Milliseconds since epoch
         event_payload = {
             "metrics": {
-				"string": {
-					"identifiers.fxa_account_id": identifiers_fxa_account_id,
-				},
-			},
+                "string": {
+                    "identifiers.fxa_account_id": identifiers_fxa_account_id,
+                },
+            },
             "events": [event],
             "ping_info": {
                 # seq is required in the Glean schema, however is not useful in server context
@@ -80,8 +80,16 @@ class EventsServerEventLogger:
             "payload": event_payload_serialized,
         }
 
+
+        self.emit_record(now, ping)
+        
+    def emit_record(self, now: datetime, ping:dict[str, Any]) -> None:
+        """Log the ping to STDOUT.
+        Applications might want to override this method to use their own logging.
+        If doing so, make sure to log the ping as JSON, and to include the
+        `Type: GLEAN_EVENT_MOZLOG_TYPE`."""    
         ping_envelope = {
-            "Timestamp": timestamp,
+            "Timestamp": now.isoformat(),
             "Logger": "glean",
             "Type": GLEAN_EVENT_MOZLOG_TYPE,
             "Fields": ping
@@ -94,9 +102,9 @@ class EventsServerEventLogger:
         self,
         user_agent: str,
         ip_address: str,
-		identifiers_fxa_account_id: str,
-		object_type: str,
-		object_state: str,
+        identifiers_fxa_account_id: str,
+        object_type: str,
+        object_state: str,
     ) -> None:
         """
         Record and submit a backend_object_update event:
@@ -106,24 +114,24 @@ class EventsServerEventLogger:
         :param str user_agent: The user agent.
         :param str ip_address: The IP address. Will be used to decode Geo information
             and scrubbed at ingestion.
-		:param str identifiers_fxa_account_id: The user's FxA account ID, if available.
-		:param str object_type: A simple name to describe the object whose state changed. For example, `api_request`.
-		:param str object_state: A JSON representation of the latest state of the object.
+        :param str identifiers_fxa_account_id: The user's FxA account ID, if available.
+        :param str object_type: A simple name to describe the object whose state changed. For example, `api_request`.
+        :param str object_state: A JSON representation of the latest state of the object.
         """
         event = {
             "category": "backend",
             "name": "object_update",
-			"extra": {
-				"object_type": str(object_type),
-				"object_state": str(object_state),
-			},
+            "extra": {
+                "object_type": str(object_type),
+                "object_state": str(object_state),
+            },
         }
         self._record(
-			user_agent,
-			ip_address,
-			identifiers_fxa_account_id,
-			event
-		)
+            user_agent,
+            ip_address,
+            identifiers_fxa_account_id,
+            event
+        )
 
 def create_events_server_event_logger(
     application_id: str,
