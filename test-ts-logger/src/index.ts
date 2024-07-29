@@ -43,7 +43,7 @@ setInterval(() => {
 
   // Logging with event metric type - new, recommended way
   // generated via:
-  // glean_parser translate tests/data/ruby_server_pings.yaml tests/data/ruby_server_metrics.yaml -f typescript_server -o ../server-telemetry-node-poc/test-ts-logger/src/glean-server-event-metric
+  // glean_parser translate tests/data/server_pings.yaml tests/data/server_metrics_with_event.yaml -f typescript_server -o ../server-telemetry-node-poc/test-ts-logger/src/glean-server-event-metric
 
   // First create an event instance providing a set of parameters that are constant during the lifetime of the application
   let gleanEventLogger = createEventsServerEventLogger({
@@ -61,6 +61,7 @@ setInterval(() => {
     identifiers_fxa_account_id: 'abc',
     object_type: 'unknown',
     object_state: 'great',
+    linking: true,
   });
   //============================================================================
 }, 1000);
