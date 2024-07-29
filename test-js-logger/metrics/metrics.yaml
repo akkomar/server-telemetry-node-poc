@@ -38,6 +38,24 @@ account:
     data_sensitivity:
       - interaction
 
+  user.id_sha256:
+    type: string
+    description: |
+      A hex string of a sha256 hash of the account's uid
+    lifetime: ping
+    send_in_pings:
+      - accounts-events
+    notification_emails:
+      - test@mozilla.com
+    bugs:
+      - https://mozilla-hub.atlassian.net/browse/FXA-????
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=????
+    expires: never
+    data_sensitivity:
+      - interaction
+
+
 relying_party:
   service:
     type: string
