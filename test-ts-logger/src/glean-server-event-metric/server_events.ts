@@ -141,7 +141,7 @@ class EventsServerEventLogger {
       extra: {
         object_type: String(object_type),
         object_state: String(object_state),
-        linking: linking,
+        linking: String(linking),
       },
     };
     this.#record({
