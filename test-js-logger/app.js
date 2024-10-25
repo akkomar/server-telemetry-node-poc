@@ -80,7 +80,7 @@ setInterval(() => {
 
   // Logging with event metric type - new, recommended way
   // generated via:
-  // glean_parser translate tests/data/ruby_server_pings.yaml tests/data/ruby_server_metrics.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server-event-metric
+  // glean_parser translate tests/data/server_metrics_with_event.yaml -f javascript_server -o ../server-telemetry-node-poc/test-js-logger/glean-server-event-metric
 
   // First create an event instance providing a set of parameters that are constant during the lifetime of the application
   let gleanEventLogger = createEventsServerEventLogger({
