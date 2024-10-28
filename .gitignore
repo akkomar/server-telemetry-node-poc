@@ -19,3 +19,5 @@ dist/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+test-go-logger/main
