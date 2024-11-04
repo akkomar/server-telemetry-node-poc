@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-rust-logger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: test-rust-logger
+  template:
+    metadata:
+      labels:
+        component: test-rust-logger
+    spec:
+      containers:
+        - name: test-rust-logger
+          image: gcr.io/akomar-server-telemetry-poc/test-rust-logger

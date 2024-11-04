@@ -10,7 +10,7 @@ use std::time::Duration;
 
 fn main() {
     let logger = GleanEventsLogger {
-        app_id: "test-rust-logger".to_string(),
+        app_id: "accounts_backend".to_string(),
         app_display_version: "1.0.0".to_string(),
         app_channel: "development".to_string(),
     };

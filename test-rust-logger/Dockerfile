@@ -1,10 +1,8 @@
-FROM rust:1.75-slim as builder
-
-WORKDIR /usr/src/app
+FROM rust:1.78.0-buster as builder
+WORKDIR /usr/src/test-rust-logger
 COPY . .
-RUN cargo build --release
+RUN cargo install --path .
 
-FROM debian:bookworm-slim
-COPY --from=builder /usr/src/app/target/release/test-rust-logger /usr/local/bin/
-
+FROM debian:bullseye-slim
+COPY --from=builder /usr/local/cargo/bin/test-rust-logger /usr/local/bin/test-rust-logger
 CMD ["test-rust-logger"]

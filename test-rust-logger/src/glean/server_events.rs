@@ -86,10 +86,9 @@ fn new_glean_event(category: &str, name: &str, extra: std::collections::HashMap<
 
 #[derive(Serialize)]
 struct LogEnvelope {
-    timestamp: String,
-    logger: String,
-    #[serde(rename = "type")]
+    #[serde(rename = "Type")]
     log_type: String,
+    #[serde(rename = "Fields")]
     fields: Ping,
 }
 
@@ -132,18 +131,16 @@ impl GleanEventsLogger {
     }
 
     fn record(&self, document_type: &str, request_info: &RequestInfo, metrics: Metrics, events: Vec<GleanEvent>) {
-        let telemetry_payload = PingPayload {
+        let ping_payload = PingPayload {
             client_info: self.create_client_info(),
             ping_info: GleanEventsLogger::create_ping_info(),
             metrics,
             events,
         };
 
-        let ping = self.create_ping(document_type, request_info, &telemetry_payload);
+        let ping = self.create_ping(document_type, request_info, &ping_payload);
 
         let envelope = LogEnvelope {
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().to_string(),
-            logger: "glean".to_string(),
             log_type: GLEAN_EVENT_MOZLOG_TYPE.to_string(),
             fields: ping,
         };
