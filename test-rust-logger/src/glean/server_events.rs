@@ -52,6 +52,18 @@ pub struct PingInfo {
     end_time: String,
 }
 
+impl Default for PingInfo {
+    fn default() -> Self {
+        // times are ISO-8601 strings, e.g. "2023-12-19T22:09:17.440Z"
+        let now = Utc::now().to_rfc3339();
+        PingInfo {
+            seq: 0,
+            start_time: now.clone(),
+            end_time: now,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ping {
     document_namespace: String,
@@ -79,8 +91,8 @@ pub fn new_glean_event(
     extra: std::collections::HashMap<String, String>,
 ) -> GleanEvent {
     GleanEvent {
-        category: category.to_string(),
-        name: name.to_string(),
+        category: category.to_owned(),
+        name: name.to_owned(),
         timestamp: Utc::now().timestamp_millis(),
         extra,
     }
@@ -105,24 +117,14 @@ impl GleanEventsLogger {
     fn create_client_info(&self) -> ClientInfo {
         // Fields with default values are required in the Glean schema, but not used in server context
         ClientInfo {
-            telemetry_sdk_build: "glean_parser v15.0.2.dev17+g81fec69a".to_string(),
-            first_run_date: "Unknown".to_string(),
-            os: "Unknown".to_string(),
-            os_version: "Unknown".to_string(),
-            architecture: "Unknown".to_string(),
-            app_build: "Unknown".to_string(),
+            telemetry_sdk_build: "glean_parser v15.0.2.dev17+g81fec69a".to_owned(),
+            first_run_date: "Unknown".to_owned(),
+            os: "Unknown".to_owned(),
+            os_version: "Unknown".to_owned(),
+            architecture: "Unknown".to_owned(),
+            app_build: "Unknown".to_owned(),
             app_display_version: self.app_display_version.clone(),
             app_channel: self.app_channel.clone(),
-        }
-    }
-
-    fn create_ping_info() -> PingInfo {
-        // times are ISO-8601 strings, e.g. "2023-12-19T22:09:17.440Z"
-        let now = Utc::now().to_rfc3339();
-        PingInfo {
-            seq: 0,
-            start_time: now.clone(),
-            end_time: now,
         }
     }
 
@@ -137,8 +139,8 @@ impl GleanEventsLogger {
         let document_id = Uuid::new_v4().to_string();
         Ping {
             document_namespace: self.app_id.clone(),
-            document_type: document_type.to_string(),
-            document_version: "1".to_string(),
+            document_type: document_type.to_owned(),
+            document_version: "1".to_owned(),
             document_id,
             user_agent: Some(config.user_agent.clone()),
             ip_address: Some(config.ip_address.clone()),
@@ -158,7 +160,7 @@ impl GleanEventsLogger {
     ) {
         let telemetry_payload: PingPayload = PingPayload {
             client_info: self.create_client_info(),
-            ping_info: GleanEventsLogger::create_ping_info(),
+            ping_info: PingInfo::default(),
             metrics,
             events,
         };
@@ -166,7 +168,7 @@ impl GleanEventsLogger {
         let ping: Ping = self.create_ping(document_type, request_info, &telemetry_payload);
 
         let envelope: LogEnvelope = LogEnvelope {
-            log_type: GLEAN_EVENT_MOZLOG_TYPE.to_string(),
+            log_type: GLEAN_EVENT_MOZLOG_TYPE.to_owned(),
             fields: ping,
         };
         let envelope_json =
@@ -196,9 +198,9 @@ impl EventsPingEvent for BackendObjectUpdateEvent {
         // If there are none, an empty, immutable HashMap is created.
         let mut extra: HashMap<String, String> = HashMap::new();
 
-        extra.insert("object_type".to_string(), self.object_type.to_string());
-        extra.insert("object_state".to_string(), self.object_state.to_string());
-        extra.insert("linking".to_string(), self.linking.to_string());
+        extra.insert("object_type".to_owned(), self.object_type.to_string());
+        extra.insert("object_state".to_owned(), self.object_state.to_string());
+        extra.insert("linking".to_owned(), self.linking.to_string());
 
         new_glean_event(
             "backend",
@@ -228,10 +230,10 @@ impl GleanEventsLogger {
         // Create corresponding metric value maps to insert into `Metrics`.
         let mut string_map: HashMap<String, serde_json::Value> = std::collections::HashMap::new();
         string_map.insert(
-            "identifiers.fxa_account_id".to_string(),
+            "identifiers.fxa_account_id".to_owned(),
             serde_json::Value::String(params.identifiers_fxa_account_id.to_string()),
         );
-        metrics.insert("string".to_string(), string_map);
+        metrics.insert("string".to_owned(), string_map);
 
 
         let mut events: Vec<GleanEvent> = Vec::new();
