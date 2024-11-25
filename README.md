@@ -50,6 +50,14 @@ kubectl apply -f kubernetes/test-js-logger-deploy.yaml
 
 kubectl apply -f kubernetes/test-ts-logger-deploy.yaml
 ```
+#### Rust logger
+```
+docker build --platform linux/amd64 -t test-rust-logger test-rust-logger && docker tag test-rust-logger gcr.io/${project_id}/test-rust-logger && docker push gcr.io/${project_id}/test-rust-logger
+
+kubectl apply -f kubernetes/test-rust-logger-deploy.yaml
+
+kubectl rollout restart deploy test-rust-logger
+```
 #### Go logger
 ```
 docker build --platform linux/amd64 -t test-go-logger test-go-logger && docker tag test-go-logger gcr.io/${project_id}/test-go-logger && docker push gcr.io/${project_id}/test-go-logger
