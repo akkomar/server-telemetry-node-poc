@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -226,8 +225,6 @@ func NewGleanEventsPublisher(ctx context.Context, projectID, topicID, appID, app
 		CountThreshold: 1000,                   // Batch up to 1000 messages per publish
 		ByteThreshold:  10e6,                   // 10 MB max batch size (Pub/Sub limit is 10MB)
 		DelayThreshold: 100 * time.Millisecond, // Max 100ms batching delay for throughput
-		Timeout:        60 * time.Second,       // Long timeout for high-throughput scenarios
-		NumGoroutines:  runtime.NumCPU() * 2,   // Parallel publisher goroutines
 
 		// Flow control prevents memory exhaustion when producing faster than publishing
 		FlowControlSettings: pubsub.FlowControlSettings{
