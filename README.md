@@ -111,6 +111,7 @@ go build -a -o main .
 ./main --project=akomar-server-telemetry-poc --topic=glean-server-event-direct --rate=1000000 --duration=10s
 ```
 
+See test-go-publisher/README.md for full deployment instructions.
 
 ## References
 https://cloud.google.com/community/tutorials/kubernetes-engine-customize-fluentbit
