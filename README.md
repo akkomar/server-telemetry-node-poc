@@ -27,7 +27,7 @@ python main.py
 ### Deploying
 ```
 export region=us-east1
-export zone=${region}-b
+export zone=${region}
 export project_id=akomar-server-telemetry-poc
 gcloud config set compute/zone ${zone}
 gcloud config set project ${project_id}
@@ -89,6 +89,28 @@ Run java-consumer to read a decoded message from Pub/Sub topic:
 cd java-consumer
 mvn clean compile exec:java -Dexec.mainClass=com.mozilla.test.App
 ```
+
+## [Experimental] Direct publishing to Pub/Sub
+
+Create a topic:
+```bash
+gcloud pubsub topics create glean-server-event-direct \
+  --project=akomar-server-telemetry-poc
+```
+Create test subscription:
+```bash
+gcloud pubsub subscriptions create glean-direct-test \
+  --topic=glean-server-event-direct \
+  --project=akomar-server-telemetry-poc
+```
+
+Run Go publisher:
+```bash
+cd test-go-publisher
+go build -a -o main .
+./main --project=akomar-server-telemetry-poc --topic=glean-server-event-direct --rate=1000000 --duration=10s
+```
+
 
 ## References
 https://cloud.google.com/community/tutorials/kubernetes-engine-customize-fluentbit

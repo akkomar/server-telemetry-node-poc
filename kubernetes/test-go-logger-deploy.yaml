@@ -1,3 +1,19 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-go-logger-config
+data:
+  # Publishing mode: "stdout" for Cloud Logging, "pubsub" for direct Pub/Sub
+  MODE: "stdout"
+
+  # Pub/Sub configuration (only used when MODE=pubsub)
+  TOPIC_ID: "glean-server-event-direct"
+
+  # Event generation rate (events per second per pod)
+  EVENTS_PER_SEC: "1"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,7 +27,57 @@ spec:
     metadata:
       labels:
         component: test-go-logger
+      annotations:
+        # Enable Workload Identity for Pub/Sub authentication (GKE only)
+        # Replace with your service account email when using pubsub mode
+        # iam.gke.io/gcp-service-account: telemetry-publisher@akomar-server-telemetry-poc.iam.gserviceaccount.com
     spec:
+      # # Keep existing node affinity
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: topology.kubernetes.io/region
+      #           operator: In
+      #           values:
+      #           - europe-west1
+
+      # Kubernetes service account (for Workload Identity)
+      # serviceAccountName: telemetry-publisher
+
       containers:
         - name: test-go-logger
           image: gcr.io/akomar-server-telemetry-poc/test-go-logger
+
+          # Environment variables from ConfigMap
+          env:
+            - name: MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-logger-config
+                  key: MODE
+            - name: PROJECT_ID
+              value: "akomar-server-telemetry-poc"
+            - name: TOPIC_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-logger-config
+                  key: TOPIC_ID
+            - name: EVENTS_PER_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-logger-config
+                  key: EVENTS_PER_SEC
+
+          # Resource limits for high-throughput publishing
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+
+      # Graceful termination period to allow flushing pending messages
+      terminationGracePeriodSeconds: 30
