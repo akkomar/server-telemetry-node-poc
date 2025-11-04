@@ -25,9 +25,9 @@ func main() {
 		params := glean.EventsPing{
 			IdentifiersFxaAccountId: "your_account_id",
 			Event: glean.BackendObjectUpdateEvent{
-				ObjectType: "your_object_type",
+				ObjectType:  "your_object_type",
 				ObjectState: "your_object_state",
-				Linking: true,
+				Linking:     true,
 			},
 		}
 
