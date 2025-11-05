@@ -221,15 +221,14 @@ func NewGleanEventsPublisher(ctx context.Context, projectID, topicID, appID, app
 	// Configure publish settings following Pub/Sub best practices for high throughput
 	// https://cloud.google.com/pubsub/docs/publish-best-practices
 	topic.PublishSettings = pubsub.PublishSettings{
-		// Batching configuration - optimized for 40k msgs/s throughput
-		CountThreshold: 1000,                   // Batch up to 1000 messages per publish
-		ByteThreshold:  10e6,                   // 10 MB max batch size (Pub/Sub limit is 10MB)
-		DelayThreshold: 100 * time.Millisecond, // Max 100ms batching delay for throughput
+		CountThreshold: 1000,
+		ByteThreshold:  10e6,
+		DelayThreshold: 100 * time.Millisecond,
 
 		// Flow control prevents memory exhaustion when producing faster than publishing
 		FlowControlSettings: pubsub.FlowControlSettings{
-			MaxOutstandingMessages: 10000,                   // Buffer up to 10k messages
-			MaxOutstandingBytes:    100e6,                   // 100 MB memory limit
+			MaxOutstandingMessages: 100000,
+			MaxOutstandingBytes:    200e6,
 			LimitExceededBehavior:  pubsub.FlowControlBlock, // Block Publish() calls when limit exceeded (backpressure)
 		},
 	}
