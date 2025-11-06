@@ -82,24 +82,28 @@ func main() {
 	// To generate the code under `glean/server_events.go`, check out the go_direct_pubsub branch of glean_parser (https://github.com/mozilla/glean_parser/pull/821) and run:
 	// glean_parser translate tests/data/server_metrics_with_event.yaml -f go_server_pubsub -o ../server-telemetry-node-poc/test-go-publisher/glean
 
-	// Create publisher
+	// ============================================================================
+	// PRODUCTION CODE: Initialize Glean Publisher
+	// ============================================================================
+	// Copy this block to your application initialization code (e.g., main() or init())
 	publisher, err := glean.NewGleanEventsPublisher(
 		ctx,
 		*projectID,
 		*topicID,
-		"accounts_backend",
-		"0.0.1",
-		"nightly",
+		"accounts_backend", // Your application ID
+		"0.0.1",            // Your application version
+		"nightly",          // Your deployment channel (prod/stage/dev)
 	)
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub publisher: %v", err)
 	}
 	defer publisher.Close()
+	// ============================================================================
 
-	// Track overall start time for rate calculation
+	// TEST HARNESS: Track overall start time for rate calculation
 	overallStartTime := time.Now()
 
-	// Start stats reporting with detailed instrumentation
+	// TEST HARNESS: Stats reporting (not needed in production - use Prometheus /metrics endpoint)
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
@@ -126,7 +130,10 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
+	// ============================================================================
+	// PRODUCTION CODE: Graceful Handler Shutdown
+	// ============================================================================
+	// Copy this block to ensure no messages are lost on application shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -135,7 +142,9 @@ func main() {
 		publisher.Flush()
 		os.Exit(0)
 	}()
+	// ============================================================================
 
+	// TEST HARNESS: Event generation loop (replace with your application logic)
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -151,12 +160,14 @@ func main() {
 
 			// Generate all events we're "behind" on (burst generation)
 			for eventCount < expectedCount {
-				// Track event generation
+				// TEST HARNESS: Track event generation
 				generatedCount.Add(1)
-
-				// Track publish call timing to detect flow control blocking
 				publishStart := time.Now()
 
+				// ================================================================
+				// PRODUCTION CODE: Record Glean Event
+				// ================================================================
+				// Copy this pattern wherever you need to submit telemetry events
 				requestInfo := glean.RequestInfo{}
 				params := glean.EventsPing{
 					IdentifiersFxaAccountId: fmt.Sprintf("account_%d", eventCount),
@@ -167,12 +178,13 @@ func main() {
 					},
 				}
 
-				publishCallCount.Add(1)
 				if err := publisher.RecordEventsPing(requestInfo, params); err != nil {
 					log.Printf("Error recording event: %v", err)
 				}
+				// ================================================================
 
-				// Detect if Publish() blocked due to flow control
+				// TEST HARNESS: Track instrumentation
+				publishCallCount.Add(1)
 				publishDuration := time.Since(publishStart)
 				if publishDuration > 1*time.Millisecond {
 					publishBlockCount.Add(1)
