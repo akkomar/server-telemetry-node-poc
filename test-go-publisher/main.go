@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"test-go-publisher/glean"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Instrumentation counters to identify bottlenecks
@@ -19,6 +21,39 @@ var (
 	publishCallCount  atomic.Int64 // Number of Publish() calls made
 	publishBlockCount atomic.Int64 // Number of times Publish() blocked (>1ms)
 )
+
+// logPrometheusMetrics queries and logs Glean Prometheus metrics for testing/debugging
+func logPrometheusMetrics() {
+	metricFamilies, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		log.Printf("Error gathering metrics: %v", err)
+		return
+	}
+
+	var totalSuccess, totalError int64
+
+	for _, mf := range metricFamilies {
+		// Only process glean_pubsub_publish_total metric
+		if mf.GetName() != "glean_pubsub_publish_total" {
+			continue
+		}
+
+		for _, m := range mf.GetMetric() {
+			labels := make(map[string]string)
+			for _, l := range m.GetLabel() {
+				labels[l.GetName()] = l.GetValue()
+			}
+			val := int64(m.GetCounter().GetValue())
+			if labels["status"] == "success" {
+				totalSuccess += val
+			} else if labels["status"] == "error" {
+				totalError += val
+			}
+		}
+	}
+
+	log.Printf("Prometheus Metrics: Published=%d, Errors=%d", totalSuccess, totalError)
+}
 
 func main() {
 	// Command-line flags
@@ -71,19 +106,20 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				stats := publisher.Stats()
 				generated := generatedCount.Load()
 				publishCalls := publishCallCount.Load()
 				blocked := publishBlockCount.Load()
 				elapsed := time.Since(overallStartTime).Seconds()
 
 				actualRate := float64(generated) / elapsed
-				publishRate := float64(stats.Published) / elapsed
+				blockedPct := 0.0
+				if publishCalls > 0 {
+					blockedPct = float64(blocked) / float64(publishCalls) * 100
+				}
 
-				log.Printf("Stats: Generated=%d (%.0f/s), PublishCalls=%d, Blocked=%d (%.1f%%), Published=%d (%.0f/s), Errors=%d",
-					generated, actualRate, publishCalls, blocked,
-					float64(blocked)/float64(publishCalls)*100,
-					stats.Published, publishRate, stats.Errors)
+				log.Printf("Stats: Generated=%d (%.0f/s), PublishCalls=%d, Blocked=%d (%.1f%%)",
+					generated, actualRate, publishCalls, blocked, blockedPct)
+				logPrometheusMetrics()
 			case <-ctx.Done():
 				return
 			}
@@ -150,7 +186,11 @@ func main() {
 				generated := generatedCount.Load()
 				publishCalls := publishCallCount.Load()
 				blocked := publishBlockCount.Load()
-				stats := publisher.Stats()
+
+				blockedPct := 0.0
+				if publishCalls > 0 {
+					blockedPct = float64(blocked) / float64(publishCalls) * 100
+				}
 
 				log.Printf("=== FINAL STATS ===")
 				log.Printf("Duration: %.2fs", elapsed)
@@ -158,11 +198,11 @@ func main() {
 				log.Printf("Generated: %d events (expected: %d, actual rate: %.0f/s)",
 					generated, int(elapsed*float64(*eventsPerSec)), float64(generated)/elapsed)
 				log.Printf("PublishCalls: %d", publishCalls)
-				log.Printf("Blocked: %d times (%.1f%% of calls took >1ms)",
-					blocked, float64(blocked)/float64(publishCalls)*100)
-				log.Printf("Published: %d (%.0f/s)", stats.Published, float64(stats.Published)/elapsed)
-				log.Printf("Errors: %d", stats.Errors)
+				log.Printf("Blocked: %d times (%.1f%% of calls took >1ms)", blocked, blockedPct)
+				logPrometheusMetrics()
 				log.Printf("==================")
+				log.Printf("Note: Production applications should expose metrics via HTTP:")
+				log.Printf("  http.Handle(\"/metrics\", promhttp.Handler())")
 
 				publisher.Flush()
 				return
