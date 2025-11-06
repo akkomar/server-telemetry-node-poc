@@ -277,7 +277,7 @@ func (g *GleanEventsPublisher) Flush() {
 
     // Wait for background processor to finish
     g.wg.Wait()
-	log.Println("All pending publishes flushed.")
+    log.Println("All pending publishes flushed.")
 }
 
 // Close performs graceful shutdown, flushing all pending messages
