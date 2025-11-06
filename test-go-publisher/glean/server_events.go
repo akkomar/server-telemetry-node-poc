@@ -84,18 +84,6 @@ type gleanEvent struct {
 	Extra     map[string]string `json:"extra"`
 }
 
-// Cloud Logging envelope structure for ParseLogEntry decoder compatibility
-// This matches the format expected by gcp-ingestion/ingestion-beam ParseLogEntry.java
-// TODO: we should simplify this and create a dedicated transform in the Decoder
-type cloudLoggingEnvelope struct {
-	JsonPayload      jsonPayloadWrapper `json:"jsonPayload"`
-	ReceiveTimestamp string             `json:"receiveTimestamp"`
-}
-
-type jsonPayloadWrapper struct {
-	Fields ping `json:"Fields"`
-}
-
 // createClientInfo constructs client info metadata (same as stdout version)
 func (g *GleanEventsPublisher) createClientInfo() clientInfo {
 	return clientInfo{
@@ -312,15 +300,7 @@ func (g *GleanEventsPublisher) publish(
 		return fmt.Errorf("failed to create ping: %w", err)
 	}
 
-	// Wrap in Cloud Logging envelope for ParseLogEntry decoder compatibility
-	// This matches the format produced by GCP Cloud Logging sink, allowing the same decoder
-	// to process both Cloud Logging-sourced and direct Pub/Sub messages
-	var envelope = cloudLoggingEnvelope{
-		JsonPayload: jsonPayloadWrapper{
-			Fields: ping,
-		},
-		ReceiveTimestamp: time.Now().UTC().Format(time.RFC3339Nano),
-	}
+	var envelope = ping
 
 	envelopeJSON, err := json.Marshal(envelope)
 	if err != nil {

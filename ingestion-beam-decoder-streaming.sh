@@ -19,7 +19,8 @@ mvn -pl ingestion-beam -am clean compile \
     --project=$PROJECT \
     --autoscalingAlgorithm=THROUGHPUT_BASED \
     --enableStreamingEngine=false \
-    --logIngestionEnabled=true \
+    --directPubsubEnabled=true \
+    --logIngestionEnabled=false \
     --pubsubIdAttribute=insertId \
     --errorOutput=projects/akomar-server-telemetry-poc/topics/telemetry-error \
     --errorOutputNumShards=60 \
