@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-go-http-publisher-config
+data:
+  # HTTP endpoint for ingestion-edge (staging)
+  # ENDPOINT: "https://stage.ingestion-edge.nonprod.dataops.mozgcp.net/submit"
+  ENDPOINT: "fixme"
+
+  # Event generation rate (events per second per pod)
+  # Start conservative, increase progressively during testing
+  EVENTS_PER_SEC: "100"
+
+  # Number of concurrent HTTP workers
+  # Tune this to find optimal throughput for 2 vcpu pod
+  CONCURRENCY: "20"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-go-http-publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: test-go-http-publisher
+  template:
+    metadata:
+      labels:
+        component: test-go-http-publisher
+    spec:
+      containers:
+        - name: test-go-http-publisher
+          image: gcr.io/akomar-server-telemetry-poc/test-go-http-publisher
+          imagePullPolicy: Always
+
+          # Configuration via environment variables
+          # App reads these directly via getEnv() in main.go
+          env:
+            - name: ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-http-publisher-config
+                  key: ENDPOINT
+            - name: EVENTS_PER_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-http-publisher-config
+                  key: EVENTS_PER_SEC
+            - name: CONCURRENCY
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-http-publisher-config
+                  key: CONCURRENCY
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 2000m        # 2 vcpu limit (same as Pub/Sub test)
+              memory: 512Mi      # Same as Pub/Sub test
+
+      # Graceful termination period to allow flushing pending HTTP requests
+      terminationGracePeriodSeconds: 30
