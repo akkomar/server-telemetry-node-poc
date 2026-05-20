@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"test-go-logger/glean"
 	"time"
 )
@@ -18,6 +19,7 @@ func main() {
 			AppID:             "accounts_backend",
 			AppDisplayVersion: "0.0.1",
 			AppChannel:        "nightly",
+			Writer:            os.Stdout,
 		}
 
 		requestInfo := glean.RequestInfo{}
