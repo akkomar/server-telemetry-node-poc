@@ -38,7 +38,27 @@ Wire-format contract is documented in
 [`docs/architecture/decoder_service_specification.md`](https://github.com/mozilla/gcp-ingestion/blob/main/docs/architecture/decoder_service_specification.md)
 in `mozilla/gcp-ingestion`.
 
+## Delivery semantics
+
+The reference `publisher.go` publishes asynchronously and does not block
+when Pub/Sub is unavailable: it hands each message to the client's batcher and
+records the result later. Under a sustained Pub/Sub outage the library's buffer
+grows unbounded and messages are effectively dropped rather than queued
+durably. That tradeoff is fine for diagnostic telemetry but not for data
+with billing or accounting semantics.
+
+If your pings have revenue semantics, set bounded
+`pubsub.FlowControlSettings` on the topic's `PublishSettings` with
+`LimitExceededBehavior: pubsub.FlowControlBlock` (see the note in
+`NewPublisher` in `publisher.go`) and decide your backpressure-vs-drop policy
+explicitly before going to production.
+
 ## Regenerating `glean/server_events.go`
+
+This example ships a generated `glean/server_events.go` for its own
+illustrative `metrics.yaml`. When integrating, point the command at your
+own `metrics.yaml` rather than copying this one (the bundled fixture has
+placeholder `bugs` / `data_reviews` fields).
 
 ```bash
 glean_parser translate metrics/metrics.yaml -f go_server_pubsub -o glean/
@@ -81,6 +101,10 @@ go run . \
   --rate=1000 \
   --duration=30s
 ```
+
+`structured-direct` is the production topic provisioned in cloudops-infra; the
+sandbox project uses its own topic name (see End-to-end validation below). Pass
+whichever applies to your target environment.
 
 Flags:
 
