@@ -21,5 +21,6 @@ dist/
 Thumbs.db
 
 test-go-logger/main
+test-go-publisher/main
 
 test-rust-logger/target

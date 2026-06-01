@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-go-publisher-config
+data:
+  # Pub/Sub topic name
+  TOPIC_ID: "glean-server-event-direct"
+
+  # Event generation rate (events per second per pod)
+  EVENTS_PER_SEC: "40000"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-go-publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: test-go-publisher
+  template:
+    metadata:
+      labels:
+        component: test-go-publisher
+      annotations:
+        # Enable Workload Identity for Pub/Sub authentication (GKE only)
+        iam.gke.io/gcp-service-account: telemetry-publisher@akomar-server-telemetry-poc.iam.gserviceaccount.com
+    spec:
+      # Kubernetes service account (for Workload Identity)
+      serviceAccountName: telemetry-publisher
+
+      containers:
+        - name: test-go-publisher
+          image: gcr.io/akomar-server-telemetry-poc/test-go-publisher
+
+          # Pass configuration via command-line args
+          # Note: No --duration flag, runs indefinitely until manually stopped
+          args:
+            - "--project=$(PROJECT_ID)"
+            - "--topic=$(TOPIC_ID)"
+            - "--rate=$(EVENTS_PER_SEC)"
+
+          env:
+            - name: PROJECT_ID
+              value: "akomar-server-telemetry-poc"
+            - name: TOPIC_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-publisher-config
+                  key: TOPIC_ID
+            - name: EVENTS_PER_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: test-go-publisher-config
+                  key: EVENTS_PER_SEC
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 2000m
+              memory: 512Mi
+
+      # Graceful termination period to allow flushing pending messages
+      terminationGracePeriodSeconds: 30

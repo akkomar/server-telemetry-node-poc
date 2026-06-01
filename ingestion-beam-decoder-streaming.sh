@@ -19,7 +19,8 @@ mvn -pl ingestion-beam -am clean compile \
     --project=$PROJECT \
     --autoscalingAlgorithm=THROUGHPUT_BASED \
     --enableStreamingEngine=false \
-    --logIngestionEnabled=true \
+    --directPubsubEnabled=true \
+    --logIngestionEnabled=false \
     --pubsubIdAttribute=insertId \
     --errorOutput=projects/akomar-server-telemetry-poc/topics/telemetry-error \
     --errorOutputNumShards=60 \
@@ -27,7 +28,7 @@ mvn -pl ingestion-beam -am clean compile \
     --geoCityDatabase=gs://akomar-server-telemetry-poc/GeoIP2-City/20230616/GeoIP2-City.mmdb \
     --geoCityFilter=gs://akomar-server-telemetry-poc/cities15000.txt \
     --geoIspDatabase=gs://akomar-server-telemetry-poc/GeoIP2-ISP/20230616/GeoIP2-ISP.mmdb \
-    --input=projects/akomar-server-telemetry-poc/subscriptions/glean-server-event-sub \
+    --input=projects/akomar-server-telemetry-poc/subscriptions/glean-direct-test \
     --inputType=pubsub \
     --maxNumWorkers=10 \
     --numWorkers=1 \
