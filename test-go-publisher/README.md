@@ -1,7 +1,5 @@
 # test-go-publisher
 
-:warning: work in progress, see https://github.com/mozilla/gcp-ingestion/pull/2857 and https://github.com/mozilla/glean_parser/pull/821
-
 Reference implementation for the direct Pub/Sub Glean telemetry path
 (DENG-9533). Publishes Glean events directly to a Pub/Sub topic that is
 consumed by a Decoder Dataflow running with `--directPubsubEnabled=true`,
@@ -37,7 +35,7 @@ Pub/Sub messages produced by `BuildEventsPingMessage`:
   from Pub/Sub's `publishTime`.
 
 Wire-format contract is documented in
-[`docs/architecture/decoder_service_specification.md`](https://github.com/mozilla/gcp-ingestion/blob/direct_pubsub/docs/architecture/decoder_service_specification.md)
+[`docs/architecture/decoder_service_specification.md`](https://github.com/mozilla/gcp-ingestion/blob/main/docs/architecture/decoder_service_specification.md)
 in `mozilla/gcp-ingestion`.
 
 ## Regenerating `glean/server_events.go`
@@ -46,9 +44,8 @@ in `mozilla/gcp-ingestion`.
 glean_parser translate metrics/metrics.yaml -f go_server_pubsub -o glean/
 ```
 
-Requires glean_parser with the `go_server_pubsub` outputter (see
-[glean_parser#821](https://github.com/mozilla/glean_parser/pull/821); to be
-released once merged).
+Requires glean_parser >= 19.2.0 (the release that added the
+`go_server_pubsub` outputter).
 
 ## Observability
 

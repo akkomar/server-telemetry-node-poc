@@ -8,7 +8,7 @@ ingestion paths:
    a logging sink forwards to a Pub/Sub topic → the gcp-ingestion Decoder
    Dataflow (deployed with `--logIngestionEnabled=true`) parses LogEntry
    wrappers and writes to BigQuery.
-2. **Direct Pub/Sub path** (DENG-9533, work in progress): server publishes
+2. **Direct Pub/Sub path** (DENG-9533): server publishes
    directly to a Pub/Sub topic with ping metadata as message attributes and
    the gzipped Glean ping JSON as message body. The Decoder Dataflow
    (deployed with `--directPubsubEnabled=true`) stamps `submission_timestamp`
@@ -93,6 +93,6 @@ for the Cloud Logging path.
 
 ## References
 
-- gcp-ingestion direct-Pub/Sub decoder support: [mozilla/gcp-ingestion#2857](https://github.com/mozilla/gcp-ingestion/pull/2857) (in review)
-- glean_parser Go publisher template: [mozilla/glean_parser#821](https://github.com/mozilla/glean_parser/pull/821) (in review)
+- gcp-ingestion direct-Pub/Sub decoder support: [mozilla/gcp-ingestion#2857](https://github.com/mozilla/gcp-ingestion/pull/2857) (merged)
+- glean_parser `go_server_pubsub` outputter: [mozilla/glean_parser#821](https://github.com/mozilla/glean_parser/pull/821) (merged, released in v19.2.0)
 - GKE fluentbit customization (Cloud Logging path background): https://cloud.google.com/community/tutorials/kubernetes-engine-customize-fluentbit
