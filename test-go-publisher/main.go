@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"test-go-publisher/glean"
@@ -88,23 +89,35 @@ func main() {
 	log.Printf("Prometheus /metrics on %s", *metricsAddr)
 
 	// === REFERENCE IMPL: graceful shutdown ===
-	// Drain in-flight publishes (bounded by --flush-timeout), then release
-	// client + metrics server.
+	// Stop accepting new work, wait for in-flight (blocking) Publish calls to
+	// return - bounded by --flush-timeout - then release the client and metrics
+	// server. With a synchronous Publish there are no detached result goroutines
+	// inside the publisher; "in-flight" is the set of caller goroutines still
+	// blocked in Publish, tracked here by wg.
+	var wg sync.WaitGroup
+	var shutdownOnce sync.Once
+	shutdown := func() {
+		shutdownOnce.Do(func() {
+			drained := make(chan struct{})
+			go func() { wg.Wait(); close(drained) }()
+			select {
+			case <-drained:
+			case <-time.After(*flushTimeout):
+				log.Printf("drain timed out after %v; closing anyway", *flushTimeout)
+			}
+			if err := publisher.Close(); err != nil {
+				log.Printf("close: %v", err)
+			}
+			_ = metricsSrv.Shutdown(context.Background())
+		})
+	}
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigChan
 		log.Printf("received %s, draining...", sig)
-		flushCtx, flushCancel := context.WithTimeout(context.Background(), *flushTimeout)
-		defer flushCancel()
-		if err := publisher.Flush(flushCtx); err != nil {
-			log.Printf("flush: %v", err)
-		}
-		if err := publisher.Close(); err != nil {
-			log.Printf("close: %v", err)
-		}
-		_ = metricsSrv.Shutdown(context.Background())
-		os.Exit(0)
+		cancel() // stop the generator; the loop's ctx.Done case runs shutdown
 	}()
 
 	// TEST HARNESS: 10-second heartbeat so kubectl logs can confirm the
@@ -140,9 +153,6 @@ func main() {
 			elapsed := time.Since(startTime).Seconds()
 			expected := int(elapsed * float64(*eventsPerSec))
 			for eventCount < expected {
-				// === REFERENCE IMPL: per-event publish ===
-				// Build a Glean ping message, hand it to the publisher. The
-				// builder is stateless; multiple goroutines may share one.
 				params := glean.EventsPing{
 					IdentifiersFxaAccountId: fmt.Sprintf("account_%d", eventCount),
 					Event: glean.BackendObjectUpdateEvent{
@@ -151,34 +161,47 @@ func main() {
 						Linking:     eventCount%2 == 0,
 					},
 				}
-				msg, err := builder.BuildEventsPingMessageWithoutUserInfo(params)
-				if err != nil {
-					publishErrors.Add(1)
-					log.Printf("build message: %v", err)
-					eventCount++
-					continue
-				}
-				publisher.Publish(ctx, msg)
-				generatedCount.Add(1)
+				// TEST HARNESS: each synthetic event runs in its own goroutine so
+				// the blocking publish below behaves like a real server, where
+				// concurrent request handlers each publish independently. A single
+				// serial loop would throttle to one publish per batch interval.
+				wg.Add(1)
+				go func(params glean.EventsPing) {
+					defer wg.Done()
+					// === REFERENCE IMPL: per-event publish ===
+					// Build a Glean ping message and publish it. Publish BLOCKS
+					// until Pub/Sub acks (or errors / times out) and returns the
+					// outcome; call it from your request-handler goroutine. A real
+					// server passes the request context; this harness uses
+					// context.Background() so in-flight publishes drain on shutdown
+					// rather than being cancelled. The builder is stateless and safe
+					// to share across goroutines.
+					msg, err := builder.BuildEventsPingMessageWithoutUserInfo(params)
+					if err != nil {
+						publishErrors.Add(1)
+						log.Printf("build message: %v", err)
+						return
+					}
+					if err := publisher.Publish(context.Background(), msg); err != nil {
+						publishErrors.Add(1)
+						log.Printf("publish: %v", err)
+						return
+					}
+					generatedCount.Add(1)
+				}(params)
 				eventCount++
 			}
 
 			if *duration > 0 && time.Since(startTime) >= *duration {
 				log.Printf("duration reached, draining...")
-				flushCtx, flushCancel := context.WithTimeout(context.Background(), *flushTimeout)
-				defer flushCancel()
-				if err := publisher.Flush(flushCtx); err != nil {
-					log.Printf("flush: %v", err)
-				}
-				if err := publisher.Close(); err != nil {
-					log.Printf("close: %v", err)
-				}
-				_ = metricsSrv.Shutdown(context.Background())
+				cancel()
+				shutdown()
 				log.Printf("final: generated=%d errors=%d", generatedCount.Load(), publishErrors.Load())
 				return
 			}
 
 		case <-ctx.Done():
+			shutdown()
 			return
 		}
 	}

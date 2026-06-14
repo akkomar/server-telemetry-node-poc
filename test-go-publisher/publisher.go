@@ -7,10 +7,11 @@ package main
 // the patterns an application is expected to layer on top:
 //
 //   - a single shared pubsub.Client + pubsub.Publisher, with batching configured
-//   - async result handling via goroutines (success/error metrics, not
-//     per-message handshake)
-//   - context-bounded Flush so callers can drain on shutdown without hanging
-//     forever, and Close to release the gRPC connection
+//   - a synchronous (blocking) Publish that waits for the Pub/Sub ack and
+//     returns the result, so the caller can fall back or surface the error
+//     inline. This mirrors MARS's server publisher in
+//     internal/gcp/pubsub/provider.go.
+//   - Close to flush the batcher and release the gRPC connection
 //   - Prometheus metrics covering both publisher-side flow control and
 //     end-to-end Pub/Sub round-trip
 //
@@ -19,7 +20,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	pubsub "cloud.google.com/go/pubsub/v2"
@@ -30,19 +30,20 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// Publisher owns a Pub/Sub client + publisher and handles async result
-// tracking, shutdown sequencing, and Prometheus instrumentation.
+// Publisher owns a Pub/Sub client + publisher and provides a synchronous
+// Publish plus shutdown sequencing and Prometheus instrumentation.
 //
-// Caller contract: ensure all Publish calls have completed before invoking
+// Caller contract: ensure all Publish calls have returned before invoking
 // Close. Concurrent Publish + Close races a panic in the Pub/Sub client.
-// The recommended shutdown sequence is "stop accepting new work → Flush →
-// Close" (see the Close doc comment).
+// The recommended shutdown sequence is "stop accepting new work → wait for
+// in-flight Publish calls to return → Close" (see the Close doc comment).
 type Publisher struct {
 	client *pubsub.Client
 	topic  *pubsub.Publisher
 
-	// wg tracks in-flight result goroutines so Flush can wait on them.
-	wg sync.WaitGroup
+	// publishTimeout bounds how long a single Publish call blocks waiting for
+	// the Pub/Sub ack before failing, so a stuck publish can't hang the caller.
+	publishTimeout time.Duration
 }
 
 // Prometheus metrics. Registered against the default registry via promauto
@@ -56,19 +57,19 @@ var (
 
 	publishCallDuration = promauto.NewHistogram(prometheus.HistogramOpts{
 		Name:    "glean_pubsub_publish_duration_seconds",
-		Help:    "Latency of the synchronous publisher.Publish call. Spikes indicate publisher-side flow control / backpressure.",
+		Help:    "Latency of the topic.Publish enqueue (handing the message to the batcher), before the blocking wait for the ack.",
 		Buckets: prometheus.ExponentialBuckets(0.0001, 2, 14), // 0.1ms .. 1.6s
 	})
 
 	publishResultDuration = promauto.NewHistogram(prometheus.HistogramOpts{
 		Name:    "glean_pubsub_result_duration_seconds",
-		Help:    "End-to-end latency from publish call to Pub/Sub ack/error. Includes batching delay and network round-trip.",
+		Help:    "Total time a Publish call blocks: enqueue + batching delay + round-trip to the Pub/Sub ack/error. This is the latency the caller experiences.",
 		Buckets: prometheus.ExponentialBuckets(0.001, 2, 14), // 1ms .. 16s
 	})
 
 	publishInflight = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "glean_pubsub_inflight",
-		Help: "Pub/Sub publishes currently awaiting result.",
+		Help: "Publish calls currently blocked awaiting their Pub/Sub result.",
 	})
 )
 
@@ -85,8 +86,14 @@ var retryableCodes = []codes.Code{
 	codes.DeadlineExceeded,
 }
 
-// NewPublisher constructs a Publisher. The caller owns shutdown: call Flush
-// to wait for in-flight messages, then Close to release the gRPC client.
+// defaultPublishTimeout bounds how long Publish blocks waiting for an ack. On a
+// latency-sensitive hot path, lower this (a few hundred ms) so slow publishes
+// fail fast into your fallback instead of inflating request latency - this is
+// the synchronous-publish tradeoff discussed in the MARS cutover plan.
+const defaultPublishTimeout = 30 * time.Second
+
+// NewPublisher constructs a Publisher. The caller owns shutdown: stop
+// publishing, let in-flight Publish calls return, then call Close.
 //
 // Batching / flow control defaults target ~10k msgs/s per process. Adjust
 // for your workload; see
@@ -122,62 +129,54 @@ func NewPublisher(ctx context.Context, projectID, topicID string) (*Publisher, e
 	topic.PublishSettings.DelayThreshold = 100 * time.Millisecond
 	// Bound total time the client spends on a single message (including
 	// retries) so a stuck publish surfaces as an error instead of blocking
-	// the result-await goroutine forever. Library default is 60s; 30s is
-	// the same bound MARS uses for its existing publishers.
+	// the caller forever. Library default is 60s; 30s is the same bound MARS
+	// uses for its existing publishers.
 	topic.PublishSettings.Timeout = 30 * time.Second
 
-	return &Publisher{client: client, topic: topic}, nil
+	return &Publisher{client: client, topic: topic, publishTimeout: defaultPublishTimeout}, nil
 }
 
-// Publish hands msg to the Pub/Sub client's batcher and returns once the
-// batcher has accepted it. The synchronous path doesn't surface errors;
-// success / error is recorded asynchronously via Prometheus.
-func (p *Publisher) Publish(ctx context.Context, msg *pubsub.Message) {
-	publishStart := time.Now()
-	result := p.topic.Publish(ctx, msg)
-	publishCallDuration.Observe(time.Since(publishStart).Seconds())
-
+// Publish sends msg and BLOCKS until Pub/Sub acks it, or the publish errors or
+// exceeds publishTimeout, returning the outcome. This mirrors MARS's server
+// publisher (internal/gcp/pubsub/provider.go): the publish is synchronous so
+// the caller learns the result inline and can fall back (e.g. to stdout
+// logging) or surface the error.
+//
+// Call it from your request-handler goroutine. Do NOT funnel every publish
+// through a single goroutine: a blocking publish only sustains throughput when
+// many callers run it concurrently, which is exactly what a server gets from
+// concurrent request handlers. The call is bounded by publishTimeout (applied
+// on top of the caller's ctx), so a stuck or slow publish fails fast rather
+// than hanging the caller.
+func (p *Publisher) Publish(ctx context.Context, msg *pubsub.Message) error {
+	start := time.Now()
 	publishInflight.Inc()
-	p.wg.Add(1)
-	go func() {
-		defer p.wg.Done()
-		defer publishInflight.Dec()
-		_, err := result.Get(context.Background())
-		publishResultDuration.Observe(time.Since(publishStart).Seconds())
-		if err != nil {
-			publishTotal.WithLabelValues("error").Inc()
-		} else {
-			publishTotal.WithLabelValues("success").Inc()
-		}
-	}()
-}
+	defer publishInflight.Dec()
 
-// Flush waits for all in-flight publish results to land (success or error).
-// Returns nil on clean drain, ctx.Err() if the context expires first. Safe
-// to call multiple times.
-func (p *Publisher) Flush(ctx context.Context) error {
-	done := make(chan struct{})
-	go func() {
-		p.wg.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
+	publishCtx, cancel := context.WithTimeout(ctx, p.publishTimeout)
+	defer cancel()
+
+	result := p.topic.Publish(publishCtx, msg)
+	publishCallDuration.Observe(time.Since(start).Seconds())
+
+	_, err := result.Get(publishCtx)
+	publishResultDuration.Observe(time.Since(start).Seconds())
+	if err != nil {
+		publishTotal.WithLabelValues("error").Inc()
+		return fmt.Errorf("pubsub publish: %w", err)
 	}
+	publishTotal.WithLabelValues("success").Inc()
+	return nil
 }
 
 // Close stops the publisher's batcher (blocks until any pending batches
 // flush) and releases the gRPC client. Must not race with Publish: stop
-// accepting new publishes first.
+// accepting new publishes and let in-flight Publish calls return first.
 //
 // Recommended shutdown sequence:
 //
-//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-//	defer cancel()
-//	_ = publisher.Flush(ctx)
+//	// stop accepting new work and wait for in-flight Publish calls to return,
+//	// then:
 //	_ = publisher.Close()
 func (p *Publisher) Close() error {
 	p.topic.Stop()

@@ -11,8 +11,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"sync"
 	"testing"
-	"time"
 
 	pubsub "cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
@@ -61,14 +61,12 @@ func setupFake(t *testing.T, topicID string) (*pstest.Server, *Publisher) {
 	return srv, pub
 }
 
-// drain runs the recommended Flush -> Close sequence with a bounded timeout.
-func drain(t *testing.T, pub *Publisher) {
+// closePub releases the publisher. Because Publish is synchronous, every
+// successful Publish call has already delivered its message by the time it
+// returns, so there is nothing to drain first - Close just stops the batcher
+// and releases the gRPC client.
+func closePub(t *testing.T, pub *Publisher) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := pub.Flush(ctx); err != nil {
-		t.Fatalf("flush: %v", err)
-	}
 	if err := pub.Close(); err != nil {
 		t.Fatalf("close: %v", err)
 	}
@@ -103,8 +101,10 @@ func TestBuildAndPublish_Attributes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build message: %v", err)
 	}
-	pub.Publish(context.Background(), msg)
-	drain(t, pub)
+	if err := pub.Publish(context.Background(), msg); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	closePub(t, pub)
 
 	msgs := srv.Messages()
 	if len(msgs) != 1 {
@@ -148,8 +148,10 @@ func TestBuildAndPublish_PayloadIsGzippedJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build message: %v", err)
 	}
-	pub.Publish(context.Background(), msg)
-	drain(t, pub)
+	if err := pub.Publish(context.Background(), msg); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	closePub(t, pub)
 
 	msgs := srv.Messages()
 	if len(msgs) != 1 {
@@ -208,8 +210,10 @@ func TestBuildAndPublish_RequestInfoAttributes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build message: %v", err)
 	}
-	pub.Publish(context.Background(), msg)
-	drain(t, pub)
+	if err := pub.Publish(context.Background(), msg); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	closePub(t, pub)
 
 	got := srv.Messages()[0]
 	if got.Attributes["user_agent"] != "Mozilla/5.0 (test)" {
@@ -220,69 +224,45 @@ func TestBuildAndPublish_RequestInfoAttributes(t *testing.T) {
 	}
 }
 
-func TestPublisher_FlushDrainsInFlight(t *testing.T) {
+// Concurrent blocking publishes all deliver, and the in-flight gauge returns
+// to zero once they have. This mirrors real usage: a blocking Publish sustains
+// throughput because many caller goroutines run it concurrently (a server's
+// concurrent request handlers), not because the call itself is async.
+func TestPublisher_ConcurrentPublishesAllDeliver(t *testing.T) {
 	srv, pub := setupFake(t, "structured-direct")
 	builder := newBuilder()
 
 	const n = 20
+	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
 		msg, err := builder.BuildEventsPingMessageWithoutUserInfo(sampleEvent("acct"))
 		if err != nil {
 			t.Fatalf("build: %v", err)
 		}
-		pub.Publish(context.Background(), msg)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := pub.Publish(context.Background(), msg); err != nil {
+				t.Errorf("publish: %v", err)
+			}
+		}()
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := pub.Flush(ctx); err != nil {
-		t.Fatalf("flush: %v", err)
-	}
-	if err := pub.Close(); err != nil {
-		t.Fatalf("close: %v", err)
-	}
+	wg.Wait()
+	closePub(t, pub)
 
 	if got := len(srv.Messages()); got != n {
-		t.Errorf("expected %d messages after Flush, got %d", n, got)
+		t.Errorf("expected %d messages, got %d", n, got)
 	}
 	if got := testutil.ToFloat64(publishInflight); got != 0 {
 		t.Errorf("publishInflight after drain = %v, want 0", got)
 	}
 }
 
-// Regression test: cancelling the caller's ctx after Publish must not
-// produce a spurious "error" metric. The underlying RPC runs on a
-// detached context (see publisher.Publish doc comment); ctx cancellation
-// after enqueue must not flip a successful publish into a metric error.
-func TestPublisher_CallerCtxCancellationDoesNotRecordError(t *testing.T) {
-	_, pub := setupFake(t, "structured-direct")
-	builder := newBuilder()
-
-	errBefore := testutil.ToFloat64(publishTotal.WithLabelValues("error"))
-	succBefore := testutil.ToFloat64(publishTotal.WithLabelValues("success"))
-
-	msg, err := builder.BuildEventsPingMessageWithoutUserInfo(sampleEvent("acct"))
-	if err != nil {
-		t.Fatalf("build: %v", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	pub.Publish(ctx, msg)
-	cancel() // immediately after enqueue; batcher has not yet flushed
-	drain(t, pub)
-
-	if got := testutil.ToFloat64(publishTotal.WithLabelValues("error")) - errBefore; got != 0 {
-		t.Errorf("error counter delta = %v, want 0 (caller ctx cancellation should not record an error)", got)
-	}
-	if got := testutil.ToFloat64(publishTotal.WithLabelValues("success")) - succBefore; got != 1 {
-		t.Errorf("success counter delta = %v, want 1", got)
-	}
-}
-
-// A publish that fails on the wire must increment publish_total{status="error"}.
-// Injects a non-retryable gRPC error (InvalidArgument is not in
-// retryableCodes) so the publish fails on the first attempt and bubbles
-// straight to result.Get.
-func TestPublisher_PublishFailureRecordsError(t *testing.T) {
+// A publish that fails on the wire must return an error AND increment
+// publish_total{status="error"}. Injects a non-retryable gRPC error
+// (InvalidArgument is not in retryableCodes) so the publish fails on the first
+// attempt and bubbles straight back through the blocking result.Get.
+func TestPublisher_PublishFailureReturnsErrorAndRecordsMetric(t *testing.T) {
 	srv, pub := setupFake(t, "structured-direct")
 	srv.SetAutoPublishResponse(false)
 	srv.AddPublishResponse(nil, status.Error(codes.InvalidArgument, "simulated"))
@@ -294,11 +274,12 @@ func TestPublisher_PublishFailureRecordsError(t *testing.T) {
 	}
 
 	errBefore := testutil.ToFloat64(publishTotal.WithLabelValues("error"))
-	pub.Publish(context.Background(), msg)
-	drain(t, pub)
+	if err := pub.Publish(context.Background(), msg); err == nil {
+		t.Fatal("expected Publish to return an error, got nil")
+	}
+	closePub(t, pub)
 
 	if got := testutil.ToFloat64(publishTotal.WithLabelValues("error")) - errBefore; got != 1 {
 		t.Errorf("error counter delta = %v, want 1", got)
 	}
 }
-
